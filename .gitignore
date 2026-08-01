@@ -1,0 +1,43 @@
+# Dependencies and build output
+node_modules/
+.next/
+dist/
+coverage/
+.vite/
+*.tsbuildinfo
+*.log
+
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Runtime data
+/data/
+apps/web/data/
+
+# Deployment and OS/editor state
+.vercel/
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Internal planning, tests, screenshots, and prototypes
+.hermes/
+docs/
+design.md
+**/tests/
+**/*.test.ts
+**/*.test.tsx
+spikes/
+shotdir/
+**/screenshots/
+**/audio_cache/
+
+# Temporary files
+*.tmp
+*.temp
+.tmp-*

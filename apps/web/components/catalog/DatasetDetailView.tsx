@@ -21,6 +21,8 @@ export default function DatasetDetailView({ id }: { id: string }) {
   const [loaded, setLoaded] = useState(false);
   const [delistState, setDelistState] = useState<'idle' | 'confirm' | 'busy'>('idle');
   const [delistError, setDelistError] = useState('');
+  const [rowIndexed, setRowIndexed] = useState(false);
+  const [totalLines, setTotalLines] = useState<number | undefined>(undefined);
 
   const sample: (SampleDataset & { isMine: false }) | undefined = useMemo(
     () => (getSampleDataset(id) ? { ...getSampleDataset(id)!, isMine: false } : undefined),
@@ -46,12 +48,14 @@ export default function DatasetDetailView({ id }: { id: string }) {
             setLoaded(true);
             return;
           }
-          const data = (await res.json()) as { manifest?: Manifest };
+          const data = (await res.json()) as { manifest?: Manifest; hasRowIndex?: boolean; totalLines?: number };
           if (cancelled || !data.manifest) {
             setLoaded(true);
             return;
           }
           const m = data.manifest;
+          setRowIndexed(data.hasRowIndex === true);
+          setTotalLines(data.totalLines);
           setDraft({
             id: m.id,
             title: m.name,
@@ -268,6 +272,8 @@ export default function DatasetDetailView({ id }: { id: string }) {
                 kind={listing.kind}
                 blobPath={listing.blobPath}
                 manifestId={listing.id.startsWith('m-') ? listing.id : undefined}
+                rowIndexed={rowIndexed}
+                totalLines={totalLines}
               />
             </div>
           </div>

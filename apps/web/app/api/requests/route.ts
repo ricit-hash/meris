@@ -4,6 +4,8 @@ import { signStream } from '../../../lib/signed-url';
 import { verifyTransaction, confirmChannelAndBuildApproval, getMicropaymentClient } from '../../../lib/payments';
 import { getManifest } from '../../../lib/manifest-store';
 import { addLedgerEntry } from '../../../lib/ledger';
+import { resolveEndOffset } from '../../../lib/row-index';
+import { getRowIndex } from '../../../lib/row-index-store';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -22,6 +24,7 @@ export async function POST(request: Request) {
     blobPath?: unknown;
     start?: unknown;
     end?: unknown;
+    records?: unknown;
     rangeBytes?: unknown;
     manifestId?: unknown;
     createHash?: unknown;
@@ -42,6 +45,18 @@ export async function POST(request: Request) {
 
   const start = typeof b.start === 'number' && Number.isFinite(b.start) ? Math.max(0, Math.floor(b.start)) : 0;
   const endRaw = typeof b.end === 'number' && Number.isFinite(b.end) ? Math.max(start + 1, Math.floor(b.end)) : undefined;
+
+  // Exact row-boundary slicing when the blob has a line index and the buyer
+  // requested a record count; otherwise keep the byte range as-is.
+  const records =
+    typeof b.records === 'number' && Number.isFinite(b.records) ? Math.max(0, Math.floor(b.records)) : undefined;
+  const resolved = resolveEndOffset({
+    lineEnds: getRowIndex(parsed.account, parsed.name),
+    records,
+    end: endRaw,
+  });
+  const end = resolved.end;
+  const endExact = resolved.exact;
 
   // Paid listing: wajib manifest + channel create yang sukses on-chain.
   let paidManifest: ReturnType<typeof getManifest> | null = null;
@@ -136,7 +151,7 @@ export async function POST(request: Request) {
   }
 
   const exp = Date.now() + SIGN_TTL_MS;
-  const sig = signStream({ account: parsed.account, name: parsed.name, start, end: endRaw, exp });
+  const sig = signStream({ account: parsed.account, name: parsed.name, start, end, exp });
   if (!sig) {
     return NextResponse.json(
       { error: 'SHELBY_STREAM_SECRET is not configured.' },
@@ -151,7 +166,7 @@ export async function POST(request: Request) {
     exp: String(exp),
     sig,
   });
-  if (endRaw !== undefined) params.set('end', String(endRaw));
+  if (end !== undefined) params.set('end', String(end));
 
-  return NextResponse.json({ url: `/api/blobs/stream?${params.toString()}` });
+  return NextResponse.json({ url: `/api/blobs/stream?${params.toString()}`, endExact });
 }

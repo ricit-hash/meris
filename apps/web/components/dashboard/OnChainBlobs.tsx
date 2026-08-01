@@ -7,9 +7,8 @@ type BlobInfo = { name: string; size: string; isWritten: boolean };
 type State =
   | { status: 'loading' }
   | { status: 'unconfigured' }
-  | { status: 'indexer-unavailable' }
   | { status: 'error'; message: string }
-  | { status: 'ok'; blobs: BlobInfo[] };
+  | { status: 'ok'; blobs: BlobInfo[]; partial: boolean };
 
 export default function OnChainBlobs() {
   const [state, setState] = useState<State>({ status: 'loading' });
@@ -26,8 +25,7 @@ export default function OnChainBlobs() {
         }
         const res = await fetch(`/api/blobs/list?account=${encodeURIComponent(wallet.address)}`);
         if (res.status === 503) {
-          const data = (await res.json()) as { indexerUnavailable?: boolean };
-          if (!cancelled) setState({ status: data.indexerUnavailable ? 'indexer-unavailable' : 'unconfigured' });
+          if (!cancelled) setState({ status: 'unconfigured' });
           return;
         }
         if (!res.ok) {
@@ -35,8 +33,8 @@ export default function OnChainBlobs() {
           if (!cancelled) setState({ status: 'error', message: data.error ?? 'Failed to list blobs.' });
           return;
         }
-        const data = (await res.json()) as { blobs?: BlobInfo[] };
-        if (!cancelled) setState({ status: 'ok', blobs: data.blobs ?? [] });
+        const data = (await res.json()) as { blobs?: BlobInfo[]; partial?: boolean };
+        if (!cancelled) setState({ status: 'ok', blobs: data.blobs ?? [], partial: data.partial === true });
       } catch {
         if (!cancelled) setState({ status: 'error', message: 'Shelby list failed.' });
       }
@@ -66,16 +64,6 @@ export default function OnChainBlobs() {
     );
   }
 
-  if (state.status === 'indexer-unavailable') {
-    return (
-      <div className="rounded-[16px] border border-[#303030] bg-[#171717] p-6">
-        <p className="ref-label">ON-CHAIN BLOBS</p>
-        <p className="mt-3 text-[13px] leading-6 text-[#888]">
-          Shelby&apos;s public blob index is unavailable. Published manifests and direct blob verification still work.
-        </p>
-      </div>
-    );
-  }
 
   if (state.status === 'error') {
     return (
@@ -92,11 +80,15 @@ export default function OnChainBlobs() {
         <p className="ref-label">ON-CHAIN BLOBS</p>
         <span className="flex items-center gap-1.5 text-[11px] uppercase tracking-[0.08em] text-[#7bafa0]">
           <i className="h-[5px] w-[5px] rounded-full bg-[#7bafa0]" />
-          Shelby live
+          {state.partial ? 'Listings verified' : 'Shelby live'}
         </span>
       </div>
       {state.blobs.length === 0 ? (
-        <p className="mt-3 text-[13px] text-[#888]">No blobs registered on this account yet.</p>
+        <p className="mt-3 text-[13px] leading-6 text-[#888]">
+          {state.partial
+            ? 'No published Meris listings reference a verified Shelby blob yet.'
+            : 'No blobs registered on this account yet.'}
+        </p>
       ) : (
         <ul className="mt-4 flex flex-col gap-2">
           {state.blobs.map((blob) => (
@@ -111,6 +103,11 @@ export default function OnChainBlobs() {
           ))}
         </ul>
       )}
+      {state.partial && state.blobs.length > 0 ? (
+        <p className="mt-3 text-[11px] leading-5 text-[#666]">
+          Showing blobs referenced by your Meris listings and verified directly on-chain.
+        </p>
+      ) : null}
     </div>
   );
 }

@@ -31,9 +31,22 @@ type Props = {
   blobPath: string;
   /** Set when this listing is a published server manifest (m-*) — required for paid purchases. */
   manifestId?: string;
+  /** True when the server has a line index for this blob — slices end exactly on a row boundary. */
+  rowIndexed?: boolean;
+  /** Lines counted by the server index; caps the request when the declared records exceed them. */
+  totalLines?: number;
 };
 
-export default function RangeRequest({ size, records, priceShelbyUSD, kind, blobPath, manifestId }: Props) {
+export default function RangeRequest({
+  size,
+  records,
+  priceShelbyUSD,
+  kind,
+  blobPath,
+  manifestId,
+  rowIndexed = false,
+  totalLines,
+}: Props) {
   const router = useRouter();
   const [count, setCount] = useState(() => String(Math.max(1, Math.round(records * 0.1))));
   const [checking, setChecking] = useState(false);
@@ -43,7 +56,8 @@ export default function RangeRequest({ size, records, priceShelbyUSD, kind, blob
   const [paymentHash, setPaymentHash] = useState<string | null>(null);
 
   const totalRecords = records;
-  const wanted = Math.min(Math.max(1, Number(count) || 0), totalRecords);
+  const maxRecords = rowIndexed && totalLines ? Math.min(totalRecords, totalLines) : totalRecords;
+  const wanted = Math.min(Math.max(1, Number(count) || 0), maxRecords);
   const pct = totalRecords > 0 ? wanted / totalRecords : 0;
   const bytes = Math.round(parseSize(size) * pct);
   const free = priceShelbyUSD === 0;
@@ -134,6 +148,7 @@ export default function RangeRequest({ size, records, priceShelbyUSD, kind, blob
           blobPath,
           start: 0,
           end: isFile ? undefined : bytes,
+          records: isFile ? undefined : wanted,
           rangeBytes: isFile ? undefined : bytes,
           manifestId,
           createHash,
@@ -185,7 +200,9 @@ export default function RangeRequest({ size, records, priceShelbyUSD, kind, blob
           <p className="mx-auto mt-3 max-w-[34ch] text-[13px] leading-6 text-[#999]">
             {isFile
               ? `Full file (${size}) requested${!free ? ` for ${formatShelbyPrice(priceShelbyUSD)}` : ''} from the Shelby blob. Delivery is a local preview until the backend ships.`
-              : `${fmt.format(wanted)} records (≈ ${formatBytes(bytes)}) requested${!free ? ` for ${formatShelbyPrice(slicePrice)}` : ''} from the Shelby blob. Delivery is a local preview until the backend ships.`}
+              : rowIndexed
+                ? `${fmt.format(wanted)} records requested — the slice ends exactly on the last row, nothing truncated.`
+                : `${fmt.format(wanted)} records (≈ ${formatBytes(bytes)}) requested${!free ? ` for ${formatShelbyPrice(slicePrice)}` : ''} from the Shelby blob. Delivery is a local preview until the backend ships.`}
           </p>
           {downloadUrl ? (
             <a
@@ -256,7 +273,7 @@ export default function RangeRequest({ size, records, priceShelbyUSD, kind, blob
               <input
                 type="number"
                 min="1"
-                max={totalRecords}
+                max={maxRecords}
                 value={count}
                 onChange={(e) => setCount(e.target.value)}
                 className="mt-2 w-full rounded-[12px] border border-[#303030] bg-[#0a0a0a] px-4 py-3 text-[14px] tabular-nums text-[#ededed] outline-none transition-colors focus:border-[#7bafa0]"
@@ -285,7 +302,8 @@ export default function RangeRequest({ size, records, priceShelbyUSD, kind, blob
           <div className="mt-4 flex items-center justify-between rounded-[12px] border border-[#262626] bg-[#0a0a0a] px-4 py-3">
             <span className="text-[12px] text-[#888]">Your slice</span>
             <span className="text-[13px] tabular-nums text-[#e5e5e5]">
-              {fmt.format(wanted)} records · ≈ {formatBytes(bytes)}
+              {fmt.format(wanted)} records ·{' '}
+              {rowIndexed ? 'ends on a row boundary' : `≈ ${formatBytes(bytes)} · approximate`}
             </span>
           </div>
 

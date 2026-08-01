@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getManifest, deleteManifest, updateManifest } from '../../../../lib/manifest-store';
+import { parseBlobPath } from '../../../../lib/shelby';
+import { getRowIndexLineCount } from '../../../../lib/row-index-store';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -12,7 +14,9 @@ export async function GET(_request: Request, { params }: Params) {
   if (!manifest) {
     return NextResponse.json({ error: 'Manifest not found.' }, { status: 404 });
   }
-  return NextResponse.json({ manifest });
+  const parsed = parseBlobPath(manifest.blobPath);
+  const totalLines = parsed?.account ? getRowIndexLineCount(parsed.account, parsed.name) : undefined;
+  return NextResponse.json({ manifest, hasRowIndex: totalLines !== undefined, totalLines });
 }
 
 export async function DELETE(request: Request, { params }: Params) {

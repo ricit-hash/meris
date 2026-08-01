@@ -48,6 +48,37 @@ export function isBlobIndexerSchemaUnavailable(message: string): boolean {
   return /field ['"]blobs['"] not found in type:? ['"]query_root['"]/i.test(message);
 }
 
+type ManifestBlobReference = {
+  publisherAddress: string;
+  blobPath: string;
+};
+
+/**
+ * Return unique Shelby paths from manifests owned by the requested publisher.
+ * The account embedded in the path must match too: a manifest cannot make this
+ * endpoint probe another account's blob namespace.
+ */
+export function getManifestBlobReferences(
+  manifests: ManifestBlobReference[],
+  requestedAccount: string,
+): Array<{ account: string; name: string }> {
+  const normalizedAccount = requestedAccount.trim().toLowerCase();
+  const seen = new Set<string>();
+  const references: Array<{ account: string; name: string }> = [];
+
+  for (const manifest of manifests) {
+    if (manifest.publisherAddress.trim().toLowerCase() !== normalizedAccount) continue;
+    const parsed = parseBlobPath(manifest.blobPath);
+    if (!parsed?.account || parsed.account.toLowerCase() !== normalizedAccount) continue;
+    const key = `${parsed.account.toLowerCase()}/${parsed.name}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    references.push({ account: parsed.account, name: parsed.name });
+  }
+
+  return references;
+}
+
 export type ParsedBlobPath = { account: string; name: string } | null;
 
 /**

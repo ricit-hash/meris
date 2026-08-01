@@ -5,6 +5,8 @@ import {
   isShelbyConfigured,
   formatBlobSize,
 } from '../../../../lib/shelby';
+import { buildLineEnds, looksLineIndexable } from '../../../../lib/row-index';
+import { setRowIndex } from '../../../../lib/row-index-store';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -67,6 +69,16 @@ export async function POST(request: Request) {
     const expirationMicros = Date.now() * 1000 + 90 * 24 * 60 * 60 * 1_000_000; // 90 hari
     await client.upload({ blobData: bytes, signer: account, blobName, expirationMicros });
     const accountAddress = account.accountAddress.toString();
+
+    // Build a line index for exact row-boundary slicing. Binary files and
+    // single-line files are skipped — they keep byte-proportional fallback.
+    let lineCount: number | undefined;
+    if (looksLineIndexable(bytes)) {
+      const lineEnds = buildLineEnds(bytes);
+      setRowIndex(accountAddress, blobName, lineEnds, bytes.length);
+      lineCount = lineEnds.length;
+    }
+
     return NextResponse.json({
       ok: true,
       account: accountAddress,
@@ -74,6 +86,7 @@ export async function POST(request: Request) {
       sizeBytes: bytes.length,
       size: formatBlobSize(bytes.length),
       blobPath: `shelby://${accountAddress}/${blobName}`,
+      lineCount,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown Shelby error';

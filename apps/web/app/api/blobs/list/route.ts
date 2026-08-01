@@ -73,7 +73,7 @@ export async function GET(request: Request) {
       const verified = await Promise.all(
         references.map(async (reference): Promise<ListedBlob | null> => {
           try {
-            const metadata = await client.coordination.getFullObjectMetadata({
+            const metadata = await client.coordination.getBlobMetadata({
               account: AccountAddress.fromString(reference.account),
               name: reference.name as never,
             });

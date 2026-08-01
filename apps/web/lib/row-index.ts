@@ -35,13 +35,15 @@ export function buildLineEnds(bytes: Uint8Array): number[] {
 
 /**
  * Byte offset that delivers exactly `wanted` lines (records) — the end of the
- * Nth line, capped at the last line. Returns 0 when nothing is requested or
+ * Nth line, as Shelby's inclusive HTTP Range end, capped at the last line.
+ * Returns 0 when nothing is requested or
  * the index is empty.
  */
 export function recordsToEndOffset(lineEnds: number[], wanted: number): number {
   if (wanted <= 0 || lineEnds.length === 0) return 0;
   const idx = Math.min(wanted, lineEnds.length) - 1;
-  return lineEnds[idx];
+  // `lineEnds` stores exclusive offsets; Shelby's HTTP Range end is inclusive.
+  return Math.max(0, lineEnds[idx] - 1);
 }
 
 export type ResolvedRange = { end?: number; exact: boolean };

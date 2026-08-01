@@ -2,6 +2,7 @@
 // Never import this from a client component.
 import { Aptos, AptosConfig, Network, Ed25519Account, Ed25519PrivateKey, AccountAddress } from '@aptos-labs/ts-sdk';
 import { ShelbyMicropaymentChannelClient } from '@shelby-protocol/sdk/node';
+import { getShelbyClientConfig, getShelbyNetworkName } from './shelby-config';
 import {
   addPendingChannelKey,
   getPendingChannelKey,
@@ -10,10 +11,10 @@ import {
 } from './channel-keys';
 import { storeMicropaymentApproval, getMicropaymentApprovals } from './micropayments';
 
-/** ShelbyUSD FA metadata address on shelbynet (verified on-chain). */
+/** ShelbyUSD FA metadata address (verified live on Aptos testnet). */
 export const SHELBYUSD_METADATA = '0x1b18363a9f1fe5e6ebf247daba5cc1c18052bb232efdc4c50f556053922d98e1';
 
-/** shelby_usd token module on shelbynet (from @shelby-protocol/sdk TOKEN_OBJECT_ADDRESS). */
+/** shelby_usd token module (verified live on Aptos testnet). */
 export const SHELBYUSD_MODULE =
   '0x249f5c642a63885ff88a5113b3ba0079840af5a1357706f8c7f3bfc5dd12511f::shelby_usd';
 
@@ -23,41 +24,51 @@ function shelbyDecimals(): number {
   return Number.isFinite(n) && n >= 0 ? n : 8;
 }
 
+/**
+ * Map the SHELBY_NETWORK env (shelbynet | testnet | local) to the Aptos
+ * Network used for chain RPC, blob operations, and micropayments.
+ */
+export function getShelbyNetwork(): Network.TESTNET | Network.SHELBYNET | Network.LOCAL {
+  switch (process.env.SHELBY_NETWORK?.trim()) {
+    case 'testnet':
+      return Network.TESTNET;
+    case 'local':
+      return Network.LOCAL;
+    default:
+      return Network.SHELBYNET;
+  }
+}
+
 let aptos: Aptos | null = null;
 
 export function getShelbyAptos(): Aptos | null {
   const apiKey = process.env.SHELBY_API_KEY?.trim();
   if (!apiKey) return null;
   if (aptos) return aptos;
-  aptos = new Aptos(
-    new AptosConfig({
-      network: Network.SHELBYNET,
-      clientConfig: { API_KEY: apiKey },
-    }),
-  );
+  const config = getShelbyClientConfig({ network: getShelbyNetworkName(), apiKey });
+  aptos = new Aptos(new AptosConfig({ network: getShelbyNetwork(), ...config.aptos }));
   return aptos;
 }
 
 let micropayment: ShelbyMicropaymentChannelClient | null = null;
 
-/** Shelby micropayment channel client (server-side, shelbynet). */
+/** Shelby micropayment channel client (server-side). */
 export function getMicropaymentClient(): ShelbyMicropaymentChannelClient | null {
   const apiKey = process.env.SHELBY_API_KEY?.trim();
   if (!apiKey) return null;
   if (micropayment) return micropayment;
   const aptosClient = getShelbyAptos();
   if (!aptosClient) return null;
-  micropayment = new ShelbyMicropaymentChannelClient({
-    network: Network.SHELBYNET,
+  micropayment = new ShelbyMicropaymentChannelClient(getShelbyClientConfig({
+    network: getShelbyNetworkName(),
     apiKey,
-    aptos: { ...aptosClient.config },
-  });
+  }));
   return micropayment;
 }
 
 /**
  * Resolve the buyer's primary fungible-store address for ShelbyUSD.
- * Verified live on shelbynet: `primary_store_address<Metadata>(owner, hex(metadata))`.
+ * Verified on testnet: `primary_store_address<Metadata>(owner, hex(metadata))`.
  */
 export async function getShelbyStoreAddress(owner: string): Promise<string> {
   const client = getShelbyAptos();

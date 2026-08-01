@@ -39,7 +39,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const metadata = await client.coordination.getFullObjectMetadata({
+    const metadata = await client.coordination.getBlobMetadata({
       account: AccountAddress.fromString(parsed.account),
       name: parsed.name as never,
     });

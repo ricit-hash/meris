@@ -2,6 +2,7 @@
 // Never import this from a client component.
 import { Ed25519Account, Ed25519PrivateKey } from '@aptos-labs/ts-sdk';
 import { ShelbyNodeClient } from '@shelby-protocol/sdk/node';
+import { getShelbyClientConfig, getShelbyNetworkName } from './shelby-config';
 
 let client: ShelbyNodeClient | null = null;
 
@@ -27,14 +28,11 @@ export function getShelbyClient(): ShelbyNodeClient | null {
   if (client) return client;
   const apiKey = process.env.SHELBY_API_KEY?.trim();
   if (!apiKey) return null;
-  const network = (process.env.SHELBY_NETWORK?.trim() ?? 'shelbynet') as 'shelbynet' | 'testnet' | 'local';
-  client = new ShelbyNodeClient({
-    network: network as never,
+  const network = getShelbyNetworkName();
+  client = new ShelbyNodeClient(getShelbyClientConfig({
+    network,
     apiKey,
-    // Storage region where blobs are written. `shelbynet-1` is the only
-    // activated location on shelbynet; override via SHELBY_LOCATION.
-    locationHint: process.env.SHELBY_LOCATION?.trim() || 'shelbynet-1',
-  });
+  }));
   return client;
 }
 

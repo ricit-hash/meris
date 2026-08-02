@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import CatalogNav from './CatalogNav';
 import DatasetCard from './DatasetCard';
+import DiscussionSection from './DiscussionSection';
 import { getSampleDataset, formatShelbyPrice, type SampleDataset } from './sample-data';
 import { getDatasets, draftToListing, type CatalogListing } from '../../lib/datasets';
 import { getProfile } from '../../lib/profile';
@@ -516,6 +517,10 @@ export default function DatasetDetailView({ id }: { id: string }) {
                 ))}
               </div>
             </div>
+          ) : null}
+
+          {listing.id.startsWith('m-') ? (
+            <DiscussionSection manifestId={listing.id} />
           ) : null}
         </section>
       </main>

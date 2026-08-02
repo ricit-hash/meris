@@ -14,7 +14,7 @@ import {
   Ed25519Signature,
 } from '@aptos-labs/ts-sdk';
 
-export type OwnershipAction = 'delist' | 'edit' | 'upload' | 'publish' | 'vote' | 'profile';
+export type OwnershipAction = 'delist' | 'edit' | 'upload' | 'publish' | 'vote' | 'profile' | 'discussion';
 
 export type VerifyResult = { ok: boolean; reason?: string };
 
@@ -28,7 +28,7 @@ export type SignatureParams = {
   now?: number;
 };
 
-const ALLOWED_ACTIONS: readonly OwnershipAction[] = ['delist', 'edit', 'upload', 'publish', 'vote', 'profile'];
+const ALLOWED_ACTIONS: readonly OwnershipAction[] = ['delist', 'edit', 'upload', 'publish', 'vote', 'profile', 'discussion'];
 const MAX_SKEW_MS = 5 * 60 * 1000;
 
 function parseEd25519Signature(signature: string): Ed25519Signature | null {

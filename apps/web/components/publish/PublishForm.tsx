@@ -41,10 +41,24 @@ export default function PublishForm({ address, username }: Props) {
     setVerify('checking');
     setVerifyMsg('');
     try {
+      const { getConnectedWallet, signMessageDetailed } = await import('../../lib/wallet/aptos-client');
+      const wallet = await getConnectedWallet();
+      if (!wallet?.address) {
+        router.push('/gate');
+        return;
+      }
       const safeName = name.trim().replace(/\s+/g, '-').toLowerCase() || 'dataset';
+      const blobName = `${safeName}/${file.name}`;
+      // Wallet-proof: signs meris:upload:{blobName}:{expiry} so the server can
+      // gate who gets to spend its Shelby gas on this blob.
+      const expiry = Date.now() + 120_000;
+      const signed = await signMessageDetailed(`meris:upload:${blobName}:${expiry}`);
       const fd = new FormData();
       fd.append('file', file);
-      fd.append('blobName', `${safeName}/${file.name}`);
+      fd.append('blobName', blobName);
+      fd.append('publicKeyHex', wallet.publicKey);
+      fd.append('signature', signed.signature);
+      fd.append('fullMessage', signed.fullMessage);
       const res = await fetch('/api/blobs/upload', { method: 'POST', body: fd });
       const data = (await res.json()) as { ok?: boolean; blobPath?: string; size?: string; error?: string };
       if (res.ok && data.ok && data.blobPath) {
@@ -149,6 +163,16 @@ export default function PublishForm({ address, username }: Props) {
     // Fase B: publish manifest server-side. Falls back to local draft when
     // the server manifest store is unavailable — local-preview mode.
     try {
+      const { getConnectedWallet, signMessageDetailed } = await import('../../lib/wallet/aptos-client');
+      const wallet = await getConnectedWallet();
+      if (!wallet?.address) {
+        router.push('/gate');
+        return;
+      }
+      // Wallet-proof: signs meris:publish:{blobPath}:{expiry}; the server
+      // derives the publisher address from the signature, never from this body.
+      const expiry = Date.now() + 120_000;
+      const signed = await signMessageDetailed(`meris:publish:${blobPath.trim()}:${expiry}`);
       await fetch('/api/manifests', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -164,7 +188,9 @@ export default function PublishForm({ address, username }: Props) {
           fileSize: fileSize.trim() || '—',
           records: kind === 'range' ? recordsNum : 0,
           publisher,
-          publisherAddress: address,
+          publicKeyHex: wallet.publicKey,
+          signature: signed.signature,
+          fullMessage: signed.fullMessage,
           uploadedAt,
         }),
       });

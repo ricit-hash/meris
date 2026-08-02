@@ -40,7 +40,7 @@ export async function DELETE(request: Request, { params }: Params) {
     const verified = verifyPublisherSignature({
       expectedAddress: manifest.publisherAddress,
       action: 'delist',
-      manifestId: id,
+      context: id,
       publicKeyHex: typeof body.publicKeyHex === 'string' ? body.publicKeyHex : '',
       signature: typeof body.signature === 'string' ? body.signature : '',
       fullMessage: typeof body.fullMessage === 'string' ? body.fullMessage : '',
@@ -86,7 +86,7 @@ export async function PUT(request: Request, { params }: Params) {
     const verified = verifyPublisherSignature({
       expectedAddress: manifest.publisherAddress,
       action: 'edit',
-      manifestId: id,
+      context: id,
       publicKeyHex: typeof b.publicKeyHex === 'string' ? b.publicKeyHex : '',
       signature: typeof b.signature === 'string' ? b.signature : '',
       fullMessage: typeof b.fullMessage === 'string' ? b.fullMessage : '',

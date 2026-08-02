@@ -1,10 +1,11 @@
 /**
- * Publisher-ownership verification for manifest delist/edit.
+ * Wallet-signature verification for Meris publish actions (upload, publish,
+ * delist, edit).
  *
  * The wallet signs a message via AIP-62 `aptos:signMessage`; the client sends
  * the signature, the full message that was signed, and the account public key.
- * The server derives the account address from the public key and checks it
- * matches the manifest publisher, then verifies the Ed25519 signature.
+ * The server derives the account address from the public key and verifies the
+ * Ed25519 signature over the full message.
  */
 import {
   AccountAddress,
@@ -13,11 +14,21 @@ import {
   Ed25519Signature,
 } from '@aptos-labs/ts-sdk';
 
-export type OwnershipAction = 'delist' | 'edit';
+export type OwnershipAction = 'delist' | 'edit' | 'upload' | 'publish';
 
 export type VerifyResult = { ok: boolean; reason?: string };
 
-const ALLOWED_ACTIONS: readonly OwnershipAction[] = ['delist', 'edit'];
+export type SignatureParams = {
+  action: OwnershipAction;
+  /** Manifest id, blob name, or blob path the signature is bound to. */
+  context: string;
+  publicKeyHex: string;
+  signature: string;
+  fullMessage: string;
+  now?: number;
+};
+
+const ALLOWED_ACTIONS: readonly OwnershipAction[] = ['delist', 'edit', 'upload', 'publish'];
 const MAX_SKEW_MS = 5 * 60 * 1000;
 
 function parseEd25519Signature(signature: string): Ed25519Signature | null {
@@ -44,38 +55,27 @@ function parseEd25519Signature(signature: string): Ed25519Signature | null {
 }
 
 /**
- * Verify that a wallet signature proves ownership of `expectedAddress` for a
- * delist/edit of `manifestId`, signed no longer than MAX_SKEW_MS ago.
+ * Verify the signature payload and recover the signer address. `address` is
+ * set only when everything checks out.
  */
-export function verifyPublisherSignature(params: {
-  expectedAddress: string;
-  action: OwnershipAction;
-  manifestId: string;
-  publicKeyHex: string;
-  signature: string;
-  fullMessage: string;
-  now?: number;
-}): VerifyResult {
+function verifySignature(params: SignatureParams): { ok: boolean; reason?: string; address?: string } {
   const now = params.now ?? Date.now();
 
   if (!ALLOWED_ACTIONS.includes(params.action)) {
     return { ok: false, reason: 'unsupported action' };
   }
 
-  // The signed message must carry the exact action + manifest id + expiry.
+  // The signed message must carry the exact action + context + expiry.
   // The wallet appends its own `\nnonce: …` after our plaintext — ignored here;
   // a short expiry provides the replay window.
+  const escapedContext = params.context.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const match = params.fullMessage.match(
-    new RegExp(`meris:(${params.action}):([^:]+):(\\d+)`),
+    new RegExp(`meris:${params.action}:${escapedContext}:(\\d+)`),
   );
   if (!match) {
-    return { ok: false, reason: 'payload not signed for this action' };
+    return { ok: false, reason: 'payload not signed for this action/context' };
   }
-  const [, action, manifestId, expiryRaw] = match;
-  if (action !== params.action || manifestId !== params.manifestId) {
-    return { ok: false, reason: 'payload is for a different action or manifest' };
-  }
-  const expiry = Number(expiryRaw);
+  const expiry = Number(match[1]);
   if (!Number.isFinite(expiry) || expiry <= now) {
     return { ok: false, reason: 'signature expired' };
   }
@@ -90,11 +90,10 @@ export function verifyPublisherSignature(params: {
     return { ok: false, reason: 'invalid public key' };
   }
 
-  // The public key must derive to the publisher address.
-  const derived = AuthenticationKey.fromPublicKey({ publicKey }).derivedAddress();
-  if (derived.toString() !== params.expectedAddress.trim().toLowerCase()) {
-    return { ok: false, reason: 'public key does not match the publisher address' };
-  }
+  const derived = AuthenticationKey.fromPublicKey({ publicKey })
+    .derivedAddress()
+    .toString()
+    .toLowerCase();
 
   const signature = parseEd25519Signature(params.signature);
   if (!signature) {
@@ -106,5 +105,39 @@ export function verifyPublisherSignature(params: {
     return { ok: false, reason: 'signature verification failed' };
   }
 
+  return { ok: true, address: derived };
+}
+
+/**
+ * Verify a signature and require the signer to be `expectedAddress`.
+ * Used for delist/edit where the owner is already recorded in the manifest.
+ */
+export function verifyPublisherSignature(
+  params: SignatureParams & { expectedAddress: string },
+): VerifyResult {
+  const result = verifySignature(params);
+  if (!result.ok) return result;
+  if (result.address !== params.expectedAddress.trim().toLowerCase()) {
+    return { ok: false, reason: 'public key does not match the publisher address' };
+  }
   return { ok: true };
+}
+
+/**
+ * Verify a signature and return the signer address.
+ * Used for upload/publish where no owner is recorded in advance — the derived
+ * address becomes the publisher address, never the client-supplied one.
+ */
+export function recoverPublisherAddress(
+  params: SignatureParams,
+): { ok: boolean; reason?: string; address?: string } {
+  return verifySignature(params);
+}
+
+/** Derive an Aptos address from a hex public key (throws on bad input). */
+export function deriveAddressFromPublicKey(publicKeyHex: string): string {
+  return AuthenticationKey.fromPublicKey({ publicKey: new Ed25519PublicKey(publicKeyHex) })
+    .derivedAddress()
+    .toString()
+    .toLowerCase();
 }

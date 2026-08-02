@@ -7,13 +7,25 @@ import {
 } from '../../../../lib/shelby';
 import { buildLineEnds, looksLineIndexable } from '../../../../lib/row-index';
 import { setRowIndex } from '../../../../lib/row-index-store';
+import { recoverPublisherAddress } from '../../../../lib/wallet-auth';
+import { checkRateLimit, clientIp } from '../../../../lib/rate-limit';
+import { isAllowedOrigin } from '../../../../lib/origin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const MAX_UPLOAD_BYTES = 100 * 1024 * 1024; // 100 MB
+const UPLOADS_PER_ADDRESS = 10;
+const UPLOADS_PER_IP = 20;
+const RATE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 
 export async function POST(request: Request) {
+  // CSRF: multipart uploads are a CORS "simple request" — block cross-site
+  // form posts that would burn the server's Shelby gas without asking the user.
+  if (!isAllowedOrigin(request.headers.get('origin'))) {
+    return NextResponse.json({ error: 'Cross-origin uploads are not allowed.' }, { status: 403 });
+  }
+
   if (!isShelbyConfigured()) {
     return NextResponse.json(
       { error: 'Shelby is not configured. Add SHELBY_API_KEY to the server environment.' },
@@ -37,15 +49,46 @@ export async function POST(request: Request) {
 
   const file = form.get('file');
   const blobNameRaw = form.get('blobName');
+  const publicKeyHexRaw = form.get('publicKeyHex');
+  const signatureRaw = form.get('signature');
+  const fullMessageRaw = form.get('fullMessage');
   if (!(file instanceof File) || typeof blobNameRaw !== 'string' || !blobNameRaw.trim()) {
     return NextResponse.json({ error: 'file and blobName are required.' }, { status: 400 });
   }
 
   const blobName = blobNameRaw.trim().replace(/^\/+/, '');
-  if (!/^[a-zA-Z0-9._\-\/]+$/.test(blobName)) {
+  if (!/^[a-zA-Z0-9._\-/]+$/.test(blobName)) {
     return NextResponse.json(
       { error: 'blobName may only contain letters, digits, . _ - /' },
       { status: 400 },
+    );
+  }
+
+  // Wallet-proof: uploads burn the server's Shelby gas, so the caller must be
+  // a real wallet holder who signs meris:upload:{blobName}:{expiry}.
+  const verified = recoverPublisherAddress({
+    action: 'upload',
+    context: blobName,
+    publicKeyHex: typeof publicKeyHexRaw === 'string' ? publicKeyHexRaw : '',
+    signature: typeof signatureRaw === 'string' ? signatureRaw : '',
+    fullMessage: typeof fullMessageRaw === 'string' ? fullMessageRaw : '',
+  });
+  if (!verified.ok || !verified.address) {
+    return NextResponse.json(
+      { error: `Upload requires a wallet signature (${verified.reason ?? 'invalid signature'}).` },
+      { status: 401 },
+    );
+  }
+  if (!checkRateLimit(`upload:${verified.address}`, UPLOADS_PER_ADDRESS, RATE_WINDOW_MS)) {
+    return NextResponse.json(
+      { error: `Too many uploads — try again later (limit ${UPLOADS_PER_ADDRESS}/hour per wallet).` },
+      { status: 429 },
+    );
+  }
+  if (!checkRateLimit(`upload:ip:${clientIp(request)}`, UPLOADS_PER_IP, RATE_WINDOW_MS)) {
+    return NextResponse.json(
+      { error: `Too many uploads from this address — try again later (limit ${UPLOADS_PER_IP}/hour).` },
+      { status: 429 },
     );
   }
 

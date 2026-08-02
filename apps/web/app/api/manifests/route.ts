@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { listManifests, createManifest, type ManifestCategory } from '../../../lib/manifest-store';
 import { parseBlobPath } from '../../../lib/shelby';
+import { recoverPublisherAddress } from '../../../lib/wallet-auth';
+import { checkRateLimit } from '../../../lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -11,6 +13,8 @@ export async function GET() {
 
 const CATEGORIES = new Set(['AI-ready', 'Web3', 'Research', 'Agent']);
 const KINDS = new Set(['range', 'file']);
+const PUBLISH_PER_ADDRESS = 20;
+const RATE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -34,6 +38,9 @@ export async function POST(request: Request) {
     publisher?: unknown;
     publisherAddress?: unknown;
     uploadedAt?: unknown;
+    publicKeyHex?: unknown;
+    signature?: unknown;
+    fullMessage?: unknown;
   };
 
   if (typeof b.name !== 'string' || b.name.trim().length < 3) {
@@ -60,10 +67,30 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'records is required for range-delivery listings.' }, { status: 400 });
   }
   const publisher = typeof b.publisher === 'string' && b.publisher.trim() ? b.publisher.trim() : 'publisher';
-  const publisherAddress =
-    typeof b.publisherAddress === 'string' && b.publisherAddress.trim().startsWith('0x')
-      ? b.publisherAddress.trim()
-      : '';
+
+  // Wallet-proof: the publisher address is derived from the verified signature,
+  // never taken from the client — this kills both spam and address spoofing.
+  const verified = recoverPublisherAddress({
+    action: 'publish',
+    context: b.blobPath.trim(),
+    publicKeyHex: typeof b.publicKeyHex === 'string' ? b.publicKeyHex : '',
+    signature: typeof b.signature === 'string' ? b.signature : '',
+    fullMessage: typeof b.fullMessage === 'string' ? b.fullMessage : '',
+  });
+  if (!verified.ok || !verified.address) {
+    return NextResponse.json(
+      { error: `Publishing requires a wallet signature (${verified.reason ?? 'invalid signature'}).` },
+      { status: 401 },
+    );
+  }
+  if (!checkRateLimit(`publish:${verified.address}`, PUBLISH_PER_ADDRESS, RATE_WINDOW_MS)) {
+    return NextResponse.json(
+      { error: `Too many listings — try again later (limit ${PUBLISH_PER_ADDRESS}/hour per wallet).` },
+      { status: 429 },
+    );
+  }
+  const publisherAddress = verified.address;
+
   const uploadedAt =
     typeof b.uploadedAt === 'number' && Number.isFinite(b.uploadedAt) ? Math.floor(b.uploadedAt) : undefined;
 

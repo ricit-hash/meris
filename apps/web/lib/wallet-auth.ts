@@ -116,8 +116,15 @@ function verifySignature(params: SignatureParams): { ok: boolean; reason?: strin
     return { ok: false, reason: 'unsupported signature format' };
   }
 
-  const message = new TextEncoder().encode(params.fullMessage);
-  if (!publicKey.verifySignature({ message, signature })) {
+  const messageCandidates = [params.fullMessage];
+  // Petra-compatible fallback: some wallet-standard implementations sign the
+  // plaintext `message` field while still returning the AIP-62 fullMessage.
+  const wrapped = params.fullMessage.match(/^APTOS\nmessage: ([\s\S]*)\nnonce: [^\n]*$/);
+  if (wrapped?.[1]) messageCandidates.push(wrapped[1]);
+  const verifiedMessage = messageCandidates.some((candidate) =>
+    publicKey.verifySignature({ message: new TextEncoder().encode(candidate), signature }),
+  );
+  if (!verifiedMessage) {
     return {
       ok: false,
       reason: 'signature verification failed',

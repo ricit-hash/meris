@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import MerisWordmark from '../brand/MerisWordmark';
 import { addDataset, type DatasetCategory } from '../../lib/datasets';
 import { getProfile } from '../../lib/profile';
+import { getManifestPublishError } from '../../lib/publish-result';
 
 type Props = {
   address: string;
@@ -171,7 +172,7 @@ export default function PublishForm({ address, username }: Props) {
     setError('');
 
     const publisher = getProfile()?.username ?? 'publisher';
-    addDataset({
+    const draftDataset = {
       id: `draft-${Date.now()}`,
       name: name.trim(),
       description: description.trim(),
@@ -184,14 +185,15 @@ export default function PublishForm({ address, username }: Props) {
       records: kind === 'range' ? recordsNum : 0,
       kind,
       createdAt: Date.now(),
-    });
+    };
 
-    // Fase B: publish manifest server-side. Falls back to local draft when
-    // the server manifest store is unavailable — local-preview mode.
+    // Persist locally only as an explicit fallback if the server publish fails.
+    // A successful server manifest is the source of truth for a live listing.
     try {
       const { getConnectedWallet, signMessageDetailed } = await import('../../lib/wallet/aptos-client');
       const wallet = await getConnectedWallet();
       if (!wallet?.address) {
+        addDataset(draftDataset);
         router.push('/gate');
         return;
       }
@@ -199,7 +201,7 @@ export default function PublishForm({ address, username }: Props) {
       // derives the publisher address from the signature, never from this body.
       const expiry = Date.now() + 120_000;
       const signed = await signMessageDetailed(`meris:publish:${blobPath.trim()}:${expiry}`);
-      await fetch('/api/manifests', {
+      const response = await fetch('/api/manifests', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -221,8 +223,17 @@ export default function PublishForm({ address, username }: Props) {
           expiresAt: expiresAt ?? Date.now() + expiryDays * 86_400_000,
         }),
       });
-    } catch {
-      // local-preview mode — draft already saved above
+      const body = (await response.json()) as { manifest?: unknown; error?: string };
+      const publishError = getManifestPublishError(response.status, body);
+      if (publishError) {
+        addDataset(draftDataset);
+        setError(`Saved as draft, but not published: ${publishError}`);
+        return;
+      }
+    } catch (err) {
+      addDataset(draftDataset);
+      setError(`Saved as draft, but not published: ${err instanceof Error ? err.message : 'publish request failed'}`);
+      return;
     }
     router.push('/dashboard');
   }

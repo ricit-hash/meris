@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import CatalogPage from '../../components/catalog/CatalogPage';
 
 export const metadata: Metadata = {
@@ -8,5 +9,9 @@ export const metadata: Metadata = {
 };
 
 export default function CatalogRoute() {
-  return <CatalogPage />;
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#0a0a0a]" />}>
+      <CatalogPage />
+    </Suspense>
+  );
 }

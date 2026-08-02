@@ -297,12 +297,11 @@ export async function signMessageDetailed(
   // the server accepts hex/base64 forms, but normalizing here is deterministic.
   const signature = normalizeSignature(sig);
 
+  // Never send an object coerced to "[object Object]" as the signed message.
+  const walletFullMessage = typeof out.fullMessage === 'string' ? out.fullMessage : '';
+
   // Wallets should return fullMessage (APTOS\nmessage:...\nnonce:...)
-  let fullMessage = out.fullMessage || '';
-  if (!fullMessage) {
-    // Reconstruct common Aptos wallet standard full message
-    fullMessage = `APTOS\nmessage: ${message}\nnonce: ${nonce}`;
-  }
+  const fullMessage = walletFullMessage || `APTOS\nmessage: ${message}\nnonce: ${nonce}`;
 
   return {
     signature,
@@ -336,13 +335,22 @@ function toBytes(value: unknown): Uint8Array | null {
   return null;
 }
 
-function normalizeSignature(sig: string | { toString(): string } | { toUint8Array?: () => Uint8Array; data?: unknown }): string {
-  if (typeof sig === 'string') return sig;
+function normalizeSignature(sig: string | { toString(): string } | { toUint8Array?: () => Uint8Array; data?: unknown; hex?: unknown }): string {
+  if (typeof sig === 'string') {
+    const raw = sig.replace(/^0x/, '');
+    if (/^[0-9a-fA-F]{128}$/.test(raw)) return raw.toLowerCase();
+    // Keep base64 intact — the server accepts raw base64 and BCS base64.
+    return sig;
+  }
+  const value = sig as { hex?: unknown };
+  if (typeof value.hex === 'string') return value.hex;
   const bytes = toBytes(sig);
   if (bytes) return bytesToHex(bytes);
-  return typeof (sig as { toString(): string }).toString === 'function'
-    ? (sig as { toString(): string }).toString()
-    : String(sig);
+  const stringified = typeof sig.toString === 'function' ? sig.toString() : '';
+  if (!stringified || stringified === '[object Object]') {
+    throw new Error('Wallet returned an unsupported signature shape');
+  }
+  return stringified;
 }
 
 export async function signMessage(

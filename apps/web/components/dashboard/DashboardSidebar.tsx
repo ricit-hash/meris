@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import MerisWordmark from '../brand/MerisWordmark';
 import LogoutButton from './LogoutButton';
 import { workspaceNavigation } from '../../lib/workspace-navigation';
@@ -9,6 +12,7 @@ type Props = {
 };
 
 export default function DashboardSidebar({ address, username }: Props) {
+  const pathname = usePathname();
   return (
     <aside className="fixed inset-y-0 left-0 hidden w-[15rem] shrink-0 flex-col border-r border-[#262626] bg-[#101010] lg:flex">
       <div className="px-6 pb-2 pt-6">
@@ -21,19 +25,18 @@ export default function DashboardSidebar({ address, username }: Props) {
         {workspaceNavigation.map((group) => (
           <div key={group.heading ?? 'home'} className="flex flex-col gap-1">
             {group.heading ? <p className="px-3 pb-1 text-[10px] uppercase tracking-[0.12em] text-[#555]">{group.heading}</p> : null}
-            {group.items.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`rounded-[10px] px-3 py-2.5 text-[14px] no-underline transition-colors ${
-                  item.label === 'Home'
-                    ? 'bg-[#1d1d1d] font-medium text-white'
-                    : 'text-[#999] hover:bg-[#171717] hover:text-white'
-                }`}
-              >
-                {item.label}
-              </Link>
-            ))}
+            {group.items.map((item) => {
+              const active = pathname === item.href.split('#')[0];
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`rounded-[10px] px-3 py-2.5 text-[14px] no-underline transition-colors ${active ? 'bg-[#1d1d1d] font-medium text-white' : 'text-[#999] hover:bg-[#171717] hover:text-white'}`}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
           </div>
         ))}
       </nav>

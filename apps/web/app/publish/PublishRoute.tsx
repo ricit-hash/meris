@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import BrandLoader from '../../components/brand/BrandLoader';
 import PublishForm from '../../components/publish/PublishForm';
 import { getProfile, type PublisherProfile } from '../../lib/profile';
+import WorkspaceFrame from '../../components/dashboard/WorkspaceFrame';
 
 export default function PublishRoute() {
   const router = useRouter();
@@ -20,7 +21,7 @@ export default function PublishRoute() {
       .then((wallet) => {
         if (cancelled) return;
         if (!wallet?.address) {
-          router.replace('/gate');
+          router.replace('/gate?intent=publish&next=/publish');
           return;
         }
         setAddress(wallet.address);
@@ -33,7 +34,7 @@ export default function PublishRoute() {
         setChecked(true);
       })
       .catch(() => {
-        if (!cancelled) router.replace('/gate');
+        if (!cancelled) router.replace('/gate?intent=publish&next=/publish');
       });
 
     return () => {
@@ -45,5 +46,5 @@ export default function PublishRoute() {
     return <BrandLoader label="Checking wallet" hint="Publisher access requires an active wallet session." />;
   }
 
-  return <PublishForm address={address} username={profile.username} />;
+  return <WorkspaceFrame address={address} profile={profile} title="Publish"><PublishForm address={address} username={profile.username} /></WorkspaceFrame>;
 }

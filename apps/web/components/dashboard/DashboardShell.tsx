@@ -42,7 +42,7 @@ export default function DashboardShell({ address, profile }: Props) {
             <div className="flex items-center gap-3">
               <span className="text-[13px] text-[#666]">Meris workspace</span>
               <span className="text-[#2b2b2b]">/</span>
-              <span className="text-[13px] font-medium text-[#e5e5e5]">Home</span>
+              <span className="text-[13px] font-medium text-[#e5e5e5]">Analysis</span>
             </div>
             <div className="flex items-center gap-3">
               <span className="hidden text-[13px] tabular-nums text-[#888] md:inline">

@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import MerisWordmark from '../brand/MerisWordmark';
 import { addDataset, type DatasetCategory } from '../../lib/datasets';
 import { getProfile } from '../../lib/profile';
 import { getManifestPublishError } from '../../lib/publish-result';
@@ -254,45 +253,8 @@ export default function PublishForm({ address, username }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-[#ededed]">
-      <div className="flex min-h-screen">
-        <aside className="fixed inset-y-0 left-0 hidden w-[15rem] shrink-0 flex-col border-r border-[#262626] bg-[#101010] lg:flex">
-          <div className="px-6 pb-2 pt-6">
-            <MerisWordmark tone="dark" className="!text-[1.15rem]" />
-          </div>
-          <nav className="flex flex-col gap-1 p-3">
-            <a href="/dashboard" className="rounded-[10px] px-3 py-2.5 text-[14px] no-underline text-[#999] hover:bg-[#171717] hover:text-white">Dashboard</a>
-            <a href="/catalog" className="rounded-[10px] px-3 py-2.5 text-[14px] no-underline text-[#999] hover:bg-[#171717] hover:text-white">Marketplace</a>
-            <a href="/publish" className="rounded-[10px] bg-[#1d1d1d] px-3 py-2.5 text-[14px] font-medium no-underline text-white">Publish</a>
-          </nav>
-          <div className="mt-auto flex flex-col gap-4 p-4">
-            <div className="rounded-[12px] border border-[#303030] bg-[#171717] p-4">
-              <p className="flex items-center gap-2 text-[10px] uppercase tracking-[0.1em] text-[#d0d0d0]">
-                <i className="h-[5px] w-[5px] rounded-full bg-[#d0d0d0]" />
-                Wallet connected
-              </p>
-              <p className="mt-3 break-all text-[12px] tabular-nums leading-5 text-[#999]">
-                {address.slice(0, 8)}…{address.slice(-6)}
-              </p>
-              <p className="mt-1 text-[12px] text-[#666]">@{username}</p>
-            </div>
-          </div>
-        </aside>
-
-        <div className="flex min-w-0 flex-1 flex-col lg:ml-[15rem]">
-          <header className="flex h-[64px] shrink-0 items-center justify-between border-b border-[#262626] px-6 md:px-10">
-            <div className="flex items-center gap-3">
-              <span className="text-[13px] text-[#666]">Publisher workspace</span>
-              <span className="text-[#2b2b2b]">/</span>
-              <span className="text-[13px] font-medium text-[#e5e5e5]">Publish</span>
-            </div>
-            <a href="/dashboard" className="rounded-[12px] border border-[#ededed]/20 px-5 py-2 text-[13px] font-medium text-[#a7a7a7] no-underline hover:text-white">
-              Cancel
-            </a>
-          </header>
-
-          <main className="flex-1 overflow-y-auto p-6 md:p-10">
-            <div className="mx-auto max-w-[52rem]">
+    <main className="flex-1 overflow-y-auto p-6 md:p-10">
+      <div className="mx-auto max-w-[52rem]">
               <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-[#666]">New listing</p>
               <h1 className="mt-3 text-[clamp(1.8rem,3vw,2.8rem)] font-light leading-[1.02] tracking-[-0.04em] text-[#ededed]">
                 Publish a dataset.
@@ -530,9 +492,6 @@ export default function PublishForm({ address, username }: Props) {
                 </div>
               </form>
             </div>
-          </main>
-        </div>
-      </div>
-    </div>
+    </main>
   );
 }

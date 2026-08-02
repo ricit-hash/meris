@@ -3,10 +3,10 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import BrandLoader from '../../components/brand/BrandLoader';
-import HomeShell from '../../components/dashboard/HomeShell';
+import DashboardShell from '../../components/dashboard/DashboardShell';
 import { getProfile, type PublisherProfile } from '../../lib/profile';
 
-export default function DashboardRoute() {
+export default function AnalysisRoute() {
   const router = useRouter();
   const [address, setAddress] = useState('');
   const [profile, setProfile] = useState<PublisherProfile | null>(null);
@@ -14,36 +14,20 @@ export default function DashboardRoute() {
 
   useEffect(() => {
     let cancelled = false;
-
     void import('../../lib/wallet/aptos-client')
       .then(({ getConnectedWallet }) => getConnectedWallet())
       .then((wallet) => {
         if (cancelled) return;
-        if (!wallet?.address) {
-          router.replace('/gate');
-          return;
-        }
+        if (!wallet?.address) { router.replace('/gate?intent=app&next=/analysis'); return; }
         setAddress(wallet.address);
         setProfile(getProfile());
         setChecked(true);
       })
-      .catch(() => {
-        if (!cancelled) router.replace('/gate');
-      });
-
-    return () => {
-      cancelled = true;
-    };
+      .catch(() => { if (!cancelled) router.replace('/gate?intent=app&next=/analysis'); });
+    return () => { cancelled = true; };
   }, [router]);
 
-  if (!address || !checked) {
-    return <BrandLoader label="Checking wallet" hint="Restoring your Meris workspace." />;
-  }
-
-  if (!profile) {
-    router.replace('/profile');
-    return <BrandLoader label="Profile needed" hint="Setting up your publisher account…" />;
-  }
-
-  return <HomeShell address={address} profile={profile} />;
+  if (!address || !checked) return <BrandLoader label="Checking wallet" hint="Restoring your analysis." />;
+  if (!profile) { router.replace('/profile'); return <BrandLoader label="Profile needed" hint="Setting up your Meris workspace…" />; }
+  return <DashboardShell address={address} profile={profile} />;
 }

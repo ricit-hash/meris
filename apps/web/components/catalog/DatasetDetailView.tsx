@@ -263,7 +263,7 @@ export default function DatasetDetailView({ id }: { id: string }) {
           <CatalogNav />
           <main className="flex min-h-[50vh] items-center justify-center px-8">
             <div className="h-[5px] w-[140px] overflow-hidden rounded-full bg-[#262626]">
-              <div className="h-full w-1/3 animate-[progress_1.2s_ease-in-out_infinite] rounded-full bg-[#7bafa0]" />
+              <div className="h-full w-1/3 animate-[progress_1.2s_ease-in-out_infinite] rounded-full bg-[#d0d0d0]" />
             </div>
           </main>
         </div>
@@ -276,7 +276,7 @@ export default function DatasetDetailView({ id }: { id: string }) {
           <div className="text-center">
             <p className="ref-label">DATASET NOT FOUND</p>
             <p className="mt-4 text-[14px] text-[#999]">This listing does not exist or was removed.</p>
-            <Link href="/catalog" className="mt-6 inline-block text-[13px] text-[#7bafa0] no-underline hover:underline">
+            <Link href="/catalog" className="mt-6 inline-block text-[13px] text-[#d0d0d0] no-underline hover:underline">
               ← Back to catalog
             </Link>
           </div>
@@ -310,12 +310,12 @@ export default function DatasetDetailView({ id }: { id: string }) {
             </Link>
             <div className="flex items-center gap-2">
               {listing.isMine ? (
-                <span className="rounded-full border border-[#4a4a42] bg-[#7bafa0]/10 px-3 py-1.5 text-[11px] uppercase tracking-[0.08em] text-[#7bafa0]">
+                <span className="rounded-full border border-[#4a4a4a] bg-[#d0d0d0]/10 px-3 py-1.5 text-[11px] uppercase tracking-[0.08em] text-[#d0d0d0]">
                   Yours
                 </span>
               ) : null}
-              <span className="flex items-center gap-2 rounded-full border border-[#3a4a42] bg-[#7bafa0]/10 px-3 py-1.5 text-[11px] uppercase tracking-[0.08em] text-[#7bafa0]">
-                <i className="h-[5px] w-[5px] rounded-full bg-[#7bafa0]" />
+              <span className="flex items-center gap-2 rounded-full border border-[#3a3a3a] bg-[#d0d0d0]/10 px-3 py-1.5 text-[11px] uppercase tracking-[0.08em] text-[#d0d0d0]">
+                <i className="h-[5px] w-[5px] rounded-full bg-[#d0d0d0]" />
                 {listing.range}
               </span>
             </div>
@@ -327,7 +327,7 @@ export default function DatasetDetailView({ id }: { id: string }) {
               <h1 className="mt-4 text-[clamp(2rem,4vw,3.6rem)] font-light leading-[0.98] tracking-[-0.05em] text-[#ededed]">
                 {listing.title}
               </h1>
-              <p className="mt-3 text-[14px] text-[#7bafa0]">
+              <p className="mt-3 text-[14px] text-[#d0d0d0]">
                 {listing.publisher} <span className="text-[#666]">· {listing.updated}</span>
               </p>
               <p className="mt-6 max-w-[52ch] text-[15px] leading-7 text-[#999]">{listing.description}</p>
@@ -376,7 +376,7 @@ export default function DatasetDetailView({ id }: { id: string }) {
                 <span className="rounded-full border border-[#2b2b2b] px-2.5 py-[3px] text-[11px] text-[#888]">
                   {listing.license}
                 </span>
-                <span className={`rounded-full px-3 py-[3px] text-[11px] font-medium tabular-nums ${listing.priceShelbyUSD === 0 ? 'border border-[#3a4a42] bg-[#7bafa0]/10 text-[#7bafa0]' : 'border border-[#303030] text-[#e5e5e5]'}`}>
+                <span className={`rounded-full px-3 py-[3px] text-[11px] font-medium tabular-nums ${listing.priceShelbyUSD === 0 ? 'border border-[#3a3a3a] bg-[#d0d0d0]/10 text-[#d0d0d0]' : 'border border-[#303030] text-[#e5e5e5]'}`}>
                   {formatShelbyPrice(listing.priceShelbyUSD)}
                 </span>
                 {listing.id.startsWith('m-') ? (
@@ -385,7 +385,7 @@ export default function DatasetDetailView({ id }: { id: string }) {
                       type="button"
                       onClick={() => void handleVote(1)}
                       aria-label="Upvote"
-                      className="flex h-7 w-7 appearance-none items-center justify-center rounded-lg border border-[#303030] text-[12px] text-[#888] transition-colors hover:border-[#7bafa0] hover:text-[#7bafa0]"
+                      className="flex h-7 w-7 appearance-none items-center justify-center rounded-lg border border-[#303030] text-[12px] text-[#888] transition-colors hover:border-[#d0d0d0] hover:text-[#d0d0d0]"
                     >
                       ↑
                     </button>

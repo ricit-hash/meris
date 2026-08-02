@@ -185,16 +185,16 @@ export default function RangeRequest({
     <div className="rounded-[16px] border border-[#303030] bg-[#171717] p-6 md:p-7">
       <div className="flex items-center justify-between">
         <p className="text-[11px] uppercase tracking-[0.08em] text-[#666]">Range request</p>
-        <span className={`rounded-full px-3 py-1 text-[11px] font-medium tabular-nums ${free ? 'border border-[#3a4a42] bg-[#7bafa0]/10 text-[#7bafa0]' : 'border border-[#303030] text-[#e5e5e5]'}`}>
+        <span className={`rounded-full px-3 py-1 text-[11px] font-medium tabular-nums ${free ? 'border border-[#3a3a3a] bg-[#d0d0d0]/10 text-[#d0d0d0]' : 'border border-[#303030] text-[#e5e5e5]'}`}>
           {formatShelbyPrice(priceShelbyUSD)}
           {!free ? ' / full dataset' : ''}
         </span>
       </div>
 
       {requested ? (
-        <div className="mt-6 rounded-[12px] border border-[#3a4a42] bg-[#7bafa0]/10 px-5 py-6 text-center">
-          <p className="flex items-center justify-center gap-2 text-[12px] uppercase tracking-[0.1em] text-[#7bafa0]">
-            <i className="h-[5px] w-[5px] rounded-full bg-[#7bafa0]" />
+        <div className="mt-6 rounded-[12px] border border-[#3a3a3a] bg-[#d0d0d0]/10 px-5 py-6 text-center">
+          <p className="flex items-center justify-center gap-2 text-[12px] uppercase tracking-[0.1em] text-[#d0d0d0]">
+            <i className="h-[5px] w-[5px] rounded-full bg-[#d0d0d0]" />
             Request sent
           </p>
           <p className="mx-auto mt-3 max-w-[34ch] text-[13px] leading-6 text-[#999]">
@@ -276,7 +276,7 @@ export default function RangeRequest({
                 max={maxRecords}
                 value={count}
                 onChange={(e) => setCount(e.target.value)}
-                className="mt-2 w-full rounded-[12px] border border-[#303030] bg-[#0a0a0a] px-4 py-3 text-[14px] tabular-nums text-[#ededed] outline-none transition-colors focus:border-[#7bafa0]"
+                className="mt-2 w-full rounded-[12px] border border-[#303030] bg-[#0a0a0a] px-4 py-3 text-[14px] tabular-nums text-[#ededed] outline-none transition-colors focus:border-[#d0d0d0]"
               />
             </label>
             <p className="pb-3 text-[12px] text-[#666]">of {fmt.format(totalRecords)} total</p>
@@ -290,7 +290,7 @@ export default function RangeRequest({
                 onClick={() => setCount(String(Math.round(totalRecords * p)))}
                 className={`flex-1 appearance-none rounded-[10px] border px-3 py-2 text-[12px] transition-colors ${
                   Math.abs(pct - p) < 0.001
-                    ? 'border-[#7bafa0] bg-[#7bafa0]/10 text-[#7bafa0]'
+                    ? 'border-[#d0d0d0] bg-[#d0d0d0]/10 text-[#d0d0d0]'
                     : 'border-[#303030] text-[#888] hover:border-[#4a4a4a] hover:text-white'
                 }`}
               >

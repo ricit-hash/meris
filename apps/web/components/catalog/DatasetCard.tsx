@@ -34,7 +34,7 @@ export default function DatasetCard({ dataset }: { dataset: CatalogListing }) {
         </div>
       </div>
 
-      <p className="mt-1 text-[11px] text-[#7bafa0]">
+      <p className="mt-1 text-[11px] text-[#d0d0d0]">
         <Link
           href={`/u/${encodeURIComponent(dataset.publisher)}`}
           onClick={(e) => e.stopPropagation()}

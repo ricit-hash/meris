@@ -269,7 +269,7 @@ export default function CatalogPage() {
               <button
                 type="button"
                 onClick={clearFilters}
-                className="appearance-none text-[12px] text-[#7bafa0] no-underline hover:underline"
+                className="appearance-none text-[12px] text-[#d0d0d0] no-underline hover:underline"
               >
                 Clear filters ({activeCount})
               </button>

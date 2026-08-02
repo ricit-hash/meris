@@ -19,7 +19,7 @@ export default function CatalogFilters({ active, onToggle }: Props) {
                   <label className="flex cursor-pointer items-center gap-3 rounded-md px-2 py-[7px] text-[13px] text-[#999] hover:bg-white/[0.03] hover:text-white">
                     <input
                       type="checkbox"
-                      className="h-3 w-3 accent-[#7bafa0]"
+                      className="h-3 w-3 accent-[#d0d0d0]"
                       checked={checked}
                       onChange={() => onToggle(group.label, option)}
                     />
@@ -37,7 +37,7 @@ export default function CatalogFilters({ active, onToggle }: Props) {
         <p className="mt-2 text-[12px] leading-relaxed text-[#999]">
           Buyers request a slice of records, not the archive. Dataset blobs stay on Shelby.
         </p>
-        <a href="/mechanism" className="mt-3 inline-block text-[12px] text-[#7bafa0] no-underline hover:underline">
+        <a href="/mechanism" className="mt-3 inline-block text-[12px] text-[#d0d0d0] no-underline hover:underline">
           Read the mechanism ↗
         </a>
       </div>

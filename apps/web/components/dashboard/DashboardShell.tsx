@@ -37,7 +37,7 @@ export default function DashboardShell({ address, profile }: Props) {
       <div className="flex min-h-screen">
         <DashboardSidebar address={address} username={profile.username} />
 
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex min-w-0 flex-1 flex-col lg:ml-[15rem]">
           <header className="flex h-[64px] shrink-0 items-center justify-between border-b border-[#262626] px-6 md:px-10">
             <div className="flex items-center gap-3">
               <span className="text-[13px] text-[#666]">Publisher workspace</span>

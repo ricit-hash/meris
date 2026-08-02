@@ -14,6 +14,7 @@ type Props = {
 
 export default function PublishForm({ address, username }: Props) {
   const router = useRouter();
+  const [step, setStep] = useState(1);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<DatasetCategory | ''>('');
@@ -238,10 +239,24 @@ export default function PublishForm({ address, username }: Props) {
     router.push('/dashboard');
   }
 
+  function nextStep() {
+    setError('');
+    if (step === 1) {
+      if (name.trim().length < 3) return setError('Dataset name needs at least 3 characters.');
+      if (!category) return setError('Select a category.');
+      if (!format.trim()) return setError('Enter the file format (CSV, JSONL, Parquet).');
+    }
+    if (step === 2) {
+      if (!blobPath.trim()) return setError('Enter the Shelby blob path.');
+      if (kind === 'range' && (Number(records) || 0) < 1) return setError('Enter the total record count.');
+    }
+    setStep((current) => Math.min(3, current + 1));
+  }
+
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-[#ededed]">
       <div className="flex min-h-screen">
-        <aside className="hidden w-[15rem] shrink-0 flex-col border-r border-[#262626] bg-[#101010] lg:flex">
+        <aside className="fixed inset-y-0 left-0 hidden w-[15rem] shrink-0 flex-col border-r border-[#262626] bg-[#101010] lg:flex">
           <div className="px-6 pb-2 pt-6">
             <MerisWordmark tone="dark" className="!text-[1.15rem]" />
           </div>
@@ -264,7 +279,7 @@ export default function PublishForm({ address, username }: Props) {
           </div>
         </aside>
 
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex min-w-0 flex-1 flex-col lg:ml-[15rem]">
           <header className="flex h-[64px] shrink-0 items-center justify-between border-b border-[#262626] px-6 md:px-10">
             <div className="flex items-center gap-3">
               <span className="text-[13px] text-[#666]">Publisher workspace</span>
@@ -287,8 +302,27 @@ export default function PublishForm({ address, username }: Props) {
               </p>
 
               <form onSubmit={submit} className="mt-10 grid gap-8" noValidate>
-                <section className="rounded-[16px] border border-[#303030] bg-[#171717] p-6 md:p-7">
-                  <h2 className="text-[13px] font-medium uppercase tracking-[0.1em] text-[#e5e5e5]">01 · Dataset details</h2>
+                <nav aria-label="Publish steps" className="flex items-center gap-2 border-b border-[#262626] pb-5 text-[11px] uppercase tracking-[0.1em]">
+                  {[['01', 'Details'], ['02', 'Storage'], ['03', 'Pricing']].map(([number, label], index) => {
+                    const current = index + 1;
+                    const complete = step > current;
+                    return (
+                      <div key={number} className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => current <= step && setStep(current)}
+                          className={`appearance-none border-0 bg-transparent p-0 transition-colors ${current === step ? 'text-[#ededed]' : complete ? 'text-[#a7a7a7]' : 'text-[#555]'}`}
+                        >
+                          {complete ? 'Done' : number} <span className="normal-case tracking-normal">{label}</span>
+                        </button>
+                        {current < 3 ? <span className="text-[#3a3a3a]">›</span> : null}
+                      </div>
+                    );
+                  })}
+                </nav>
+                {step === 1 ? (
+                  <section className="rounded-[16px] border border-[#303030] bg-[#171717] p-6 md:p-7">
+                    <h2 className="text-[13px] font-medium uppercase tracking-[0.1em] text-[#e5e5e5]">01 · Dataset details</h2>
                   <div className="mt-6 grid gap-5">
                     <label className="block">
                       <span className={labelClass}>Name *</span>
@@ -340,9 +374,9 @@ export default function PublishForm({ address, username }: Props) {
                       <input className={`mt-2 ${inputClass}`} value={license} onChange={(e) => setLicense(e.target.value)} placeholder="CC BY 4.0" />
                     </label>
                   </div>
-                </section>
-
-                <section className="rounded-[16px] border border-[#303030] bg-[#171717] p-6 md:p-7">
+                  </section>
+                ) : step === 2 ? (
+                  <section className="rounded-[16px] border border-[#303030] bg-[#171717] p-6 md:p-7">
                   <h2 className="text-[13px] font-medium uppercase tracking-[0.1em] text-[#e5e5e5]">02 · Shelby storage</h2>
                   <p className="mt-3 text-[13px] leading-6 text-[#888]">
                     The blob must already exist in your Shelby storage account. Meris records the pointer and the range boundary — it never copies the file.
@@ -421,9 +455,9 @@ export default function PublishForm({ address, username }: Props) {
                         : 'Config files are sold whole — buyers get the complete file, no slicing.'}
                     </p>
                   </div>
-                </section>
-
-                <section className="rounded-[16px] border border-[#303030] bg-[#171717] p-6 md:p-7">
+                  </section>
+                ) : (
+                  <section className="rounded-[16px] border border-[#303030] bg-[#171717] p-6 md:p-7">
                   <h2 className="text-[13px] font-medium uppercase tracking-[0.1em] text-[#e5e5e5]">03 · Price</h2>
                   <p className="mt-3 text-[13px] leading-6 text-[#888]">
                     Price per range request, in ShelbyUSD. Free listings still require a connected wallet to preview.
@@ -462,6 +496,7 @@ export default function PublishForm({ address, username }: Props) {
                     </p>
                   ) : null}
                 </section>
+                )}
 
                 {error ? (
                   <p className="rounded-[12px] border border-red-300/15 bg-red-950/20 px-4 py-3 text-[13px] text-red-100/80" role="alert">
@@ -470,15 +505,29 @@ export default function PublishForm({ address, username }: Props) {
                 ) : null}
 
                 <div className="flex items-center justify-between gap-4 pb-8">
-                  <p className="text-[12px] leading-5 text-[#666]">
-                    This saves a local draft. Publishing to the live market comes with the backend.
-                  </p>
                   <button
-                    type="submit"
-                    className="shrink-0 appearance-none rounded-[12px] border-0 bg-[#f2f2f2] px-7 py-3 text-[14px] font-medium text-[#222] transition-[opacity,transform] duration-150 hover:opacity-85 active:scale-[0.97]"
+                    type="button"
+                    onClick={() => setStep((current) => Math.max(1, current - 1))}
+                    className={`appearance-none border-0 bg-transparent px-0 text-[13px] text-[#777] transition-colors hover:text-white ${step === 1 ? 'invisible' : ''}`}
                   >
-                    Save draft
+                    Back
                   </button>
+                  {step < 3 ? (
+                    <button
+                      type="button"
+                      onClick={nextStep}
+                      className="ml-auto shrink-0 appearance-none rounded-[12px] border-0 bg-[#f2f2f2] px-7 py-3 text-[14px] font-medium text-[#222] transition-[opacity,transform] duration-150 hover:opacity-85 active:scale-[0.97]"
+                    >
+                      Next
+                    </button>
+                  ) : (
+                    <button
+                      type="submit"
+                      className="ml-auto shrink-0 appearance-none rounded-[12px] border-0 bg-[#f2f2f2] px-7 py-3 text-[14px] font-medium text-[#222] transition-[opacity,transform] duration-150 hover:opacity-85 active:scale-[0.97]"
+                    >
+                      Publish listing
+                    </button>
+                  )}
                 </div>
               </form>
             </div>

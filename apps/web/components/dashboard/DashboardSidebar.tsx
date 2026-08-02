@@ -16,7 +16,7 @@ const nav = [
 
 export default function DashboardSidebar({ address, username }: Props) {
   return (
-    <aside className="hidden w-[15rem] shrink-0 flex-col border-r border-[#262626] bg-[#101010] lg:flex">
+    <aside className="fixed inset-y-0 left-0 hidden w-[15rem] shrink-0 flex-col border-r border-[#262626] bg-[#101010] lg:flex">
       <div className="px-6 pb-2 pt-6">
         <Link href="/" aria-label="Meris home">
           <MerisWordmark tone="dark" className="!text-[1.15rem]" />

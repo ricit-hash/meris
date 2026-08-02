@@ -150,9 +150,11 @@ function verifySignature(params: SignatureParams): { ok: boolean; reason?: strin
   }
 
   const messageCandidates = [params.fullMessage];
-  // Petra-compatible fallback: some wallet-standard implementations sign the
-  // plaintext `message` field while still returning the AIP-62 fullMessage.
-  const wrapped = params.fullMessage.match(/^APTOS\nmessage: ([\s\S]*)\nnonce: [^\n]*$/);
+  const canonicalMessage = params.fullMessage.replace(/\r\n/g, '\n');
+  if (canonicalMessage !== params.fullMessage) messageCandidates.push(canonicalMessage);
+  // Some multipart parsers canonicalize text fields to CRLF. Wallets sign the
+  // returned LF message, so verify the canonical LF representation too.
+  const wrapped = canonicalMessage.match(/^APTOS\nmessage: ([\s\S]*)\nnonce: [^\n]*$/);
   if (wrapped?.[1]) messageCandidates.push(wrapped[1]);
   const verifiedMessage = messageCandidates.some((candidate) =>
     publicKey.verifySignature({ message: new TextEncoder().encode(candidate), signature })

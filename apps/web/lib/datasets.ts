@@ -59,6 +59,10 @@ export type CatalogListing = {
   license: string;
   range: string;
   requests: number;
+  /** Real download count from the manifest (server listings). */
+  downloads: number;
+  /** Vote delta (upvotes - downvotes). */
+  votes: number;
   priceShelbyUSD: number;
   blobPath: string;
   records: number;
@@ -87,6 +91,8 @@ export function draftToListing(draft: DatasetDraft, username: string): CatalogLi
     license: draft.license,
     range: kind === 'file' ? 'Full file' : 'Range-ready',
     requests: 0,
+    downloads: 0,
+    votes: 0,
     priceShelbyUSD: price,
     blobPath: draft.blobPath,
     records,

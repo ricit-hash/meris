@@ -76,7 +76,9 @@ export default function CatalogPage() {
             size: m.fileSize,
             license: m.license,
             range: m.kind === 'file' ? 'Full file' : 'Range-ready',
-            requests: 0,
+            requests: m.downloads ?? 0,
+            downloads: m.downloads ?? 0,
+            votes: m.votes ?? 0,
             priceShelbyUSD: m.priceShelbyUSD,
             blobPath: m.blobPath,
             records: m.records,
@@ -130,6 +132,12 @@ export default function CatalogPage() {
         break;
       case 'Price: low to high':
         sorted.sort((a, b) => (a.priceShelbyUSD === 0 ? 0 : a.priceShelbyUSD) - (b.priceShelbyUSD === 0 ? 0 : b.priceShelbyUSD));
+        break;
+      case 'Most downloaded':
+        sorted.sort((a, b) => b.downloads - a.downloads);
+        break;
+      case 'Top voted':
+        sorted.sort((a, b) => b.votes - a.votes);
         break;
       default: // Most requested
         sorted.sort((a, b) => b.requests - a.requests);

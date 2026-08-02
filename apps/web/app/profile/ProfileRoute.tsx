@@ -46,8 +46,31 @@ export default function ProfileRoute() {
   return (
     <ProfileSetup
       address={address}
-      onComplete={(p) => {
+      onComplete={async (p) => {
         saveProfile(p);
+        // Write the profile blob to Shelby (on-chain registered). Best-effort —
+        // when the server is not configured the local profile still works.
+        try {
+          const { getConnectedWallet, signMessageDetailed } = await import('../../lib/wallet/aptos-client');
+          const wallet = await getConnectedWallet();
+          if (!wallet?.address) throw new Error('no wallet');
+          const expiry = Date.now() + 120_000;
+          const signed = await signMessageDetailed(`meris:profile:${address}:${expiry}`);
+          await fetch('/api/profile', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              wallet: address,
+              username: p.username,
+              bio: '',
+              publicKeyHex: wallet.publicKey,
+              signature: signed.signature,
+              fullMessage: signed.fullMessage,
+            }),
+          });
+        } catch {
+          // local profile fallback — server unavailable
+        }
         router.replace('/dashboard');
       }}
     />

@@ -10,6 +10,8 @@ export type SampleDataset = {
   license: string;
   range: string;
   requests: number;
+  downloads: number;
+  votes: number;
   /** ShelbyUSD per range request. 0 = free listing. */
   priceShelbyUSD: number;
   /** Shelby blob pointer. */
@@ -38,7 +40,7 @@ export const sampleDatasets: SampleDataset[] = [
     size: '86 MB',
     license: 'Research only',
     range: 'Range-ready',
-    requests: 31,
+    requests: 31, downloads: 31, votes: 17,
     priceShelbyUSD: 0,
     blobPath: 'shelby://eval-studio/datasets/agent-benchmark-traces.jsonl',
     records: 150000,
@@ -56,7 +58,7 @@ export const sampleDatasets: SampleDataset[] = [
     size: '480 MB',
     license: 'ODbL',
     range: 'Range-ready',
-    requests: 64,
+    requests: 64, downloads: 64, votes: 8,
     priceShelbyUSD: 4.5,
     blobPath: 'shelby://chain-index/datasets/aptos-transfer-events.parquet',
     records: 4200000,
@@ -74,7 +76,7 @@ export const sampleDatasets: SampleDataset[] = [
     size: '1.2 GB',
     license: 'CC BY 4.0',
     range: 'Range-ready',
-    requests: 128,
+    requests: 128, downloads: 128, votes: 16,
     priceShelbyUSD: 0,
     blobPath: 'shelby://meteo-labs/datasets/weather-observations.csv',
     records: 8000000,
@@ -92,7 +94,7 @@ export const sampleDatasets: SampleDataset[] = [
     size: '2.1 GB',
     license: 'ODbL',
     range: 'Range-ready',
-    requests: 47,
+    requests: 47, downloads: 47, votes: 9,
     priceShelbyUSD: 12,
     blobPath: 'shelby://nansen-arc/datasets/token-holder-snapshots.parquet',
     records: 12000000,
@@ -110,7 +112,7 @@ export const sampleDatasets: SampleDataset[] = [
     size: '212 MB',
     license: 'CC BY 4.0',
     range: 'Range-ready',
-    requests: 19,
+    requests: 19, downloads: 19, votes: 13,
     priceShelbyUSD: 2.25,
     blobPath: 'shelby://governance-watch/datasets/gov-proposal-votes.csv',
     records: 890000,
@@ -128,7 +130,7 @@ export const sampleDatasets: SampleDataset[] = [
     size: '34 MB',
     license: 'Research only',
     range: 'Range-ready',
-    requests: 88,
+    requests: 88, downloads: 88, votes: 16,
     priceShelbyUSD: 0,
     blobPath: 'shelby://prompt-forge/datasets/rpg-llm-prompt-set.jsonl',
     records: 120000,
@@ -146,7 +148,7 @@ export const sampleDatasets: SampleDataset[] = [
     size: '640 MB',
     license: 'ODbL',
     range: 'Range-ready',
-    requests: 22,
+    requests: 22, downloads: 22, votes: 34,
     priceShelbyUSD: 8,
     blobPath: 'shelby://liquidity-lens/datasets/defi-liquidity-events.parquet',
     records: 2100000,
@@ -164,7 +166,7 @@ export const sampleDatasets: SampleDataset[] = [
     size: '3.4 GB',
     license: 'CC BY 4.0',
     range: 'Range-ready',
-    requests: 15,
+    requests: 15, downloads: 15, votes: 25,
     priceShelbyUSD: 0,
     blobPath: 'shelby://statistical-core/datasets/census-block-tables.csv',
     records: 25000000,
@@ -182,7 +184,7 @@ export const sampleDatasets: SampleDataset[] = [
     size: '58 MB',
     license: 'Research only',
     range: 'Range-ready',
-    requests: 40,
+    requests: 40, downloads: 40, votes: 0,
     priceShelbyUSD: 6,
     blobPath: 'shelby://eval-studio/datasets/agent-safety-reports.jsonl',
     records: 45000,
@@ -200,7 +202,7 @@ export const sampleDatasets: SampleDataset[] = [
     size: '4.8 KB',
     license: 'CC BY 4.0',
     range: 'Full file',
-    requests: 214,
+    requests: 214, downloads: 214, votes: 18,
     priceShelbyUSD: 9,
     blobPath: 'shelby://prompt-forge/agents/soul-executive.md',
     records: 0,
@@ -218,7 +220,7 @@ export const sampleDatasets: SampleDataset[] = [
     size: '12 KB',
     license: 'Research only',
     range: 'Full file',
-    requests: 96,
+    requests: 96, downloads: 96, votes: 32,
     priceShelbyUSD: 0,
     blobPath: 'shelby://eval-studio/agents/tool-guardrails.md',
     records: 0,
@@ -258,4 +260,4 @@ export const filterGroups = [
   },
 ] as const;
 
-export const sortOptions = ['Most requested', 'Newest', 'Price: low to high', 'Alphabetical'] as const;
+export const sortOptions = ['Most requested', 'Most downloaded', 'Top voted', 'Newest', 'Price: low to high', 'Alphabetical'] as const;

@@ -47,6 +47,9 @@ export default function DatasetCard({ dataset }: { dataset: CatalogListing }) {
         <div className="mt-3 flex items-center gap-3 border-t border-[#262626] pt-2.5 text-[11px] text-[#777]">
           <span className="uppercase">{dataset.format}</span>
           <span className="tabular-nums">{dataset.size}</span>
+          <span className="tabular-nums">
+            ↓{dataset.downloads} · ↑{dataset.votes}
+          </span>
           <span
             className={`ml-auto font-medium tabular-nums ${
               dataset.priceShelbyUSD === 0 ? 'text-[#7bafa0]' : 'text-[#e5e5e5]'

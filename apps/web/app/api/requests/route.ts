@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { isShelbyConfigured, parseBlobPath } from '../../../lib/shelby';
 import { signStream } from '../../../lib/signed-url';
 import { verifyTransaction, confirmChannelAndBuildApproval, getMicropaymentClient } from '../../../lib/payments';
-import { getManifest } from '../../../lib/manifest-store';
+import { getManifest, incrementDownloads } from '../../../lib/manifest-store';
 import { addLedgerEntry } from '../../../lib/ledger';
 import { resolveEndOffset, parseByteSize, declaredSliceEndBytes } from '../../../lib/row-index';
 import { getRowIndex } from '../../../lib/row-index-store';
@@ -195,6 +195,11 @@ export async function POST(request: Request) {
       { error: 'SHELBY_STREAM_SECRET is not configured.' },
       { status: 503 },
     );
+  }
+
+  // Count the download once a real signed URL is issued.
+  if (paidManifest) {
+    incrementDownloads(paidManifest.id);
   }
 
   const params = new URLSearchParams({

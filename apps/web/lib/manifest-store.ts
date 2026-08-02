@@ -22,6 +22,12 @@ export type Manifest = {
   publisherAddress: string;
   /** Epoch ms when the blob was uploaded to Shelby. Blobs expire 90 days after upload. */
   uploadedAt?: number;
+  /** Number of signed download URLs issued for this listing. */
+  downloads?: number;
+  /** Vote delta (upvotes - downvotes). */
+  votes?: number;
+  /** Wallets that voted (dedupe). */
+  voters?: string[];
   createdAt: number;
 };
 
@@ -43,6 +49,9 @@ function readAll(): Manifest[] {
         ...m,
         priceShelbyUSD: typeof legacy.priceShelbyUSD === 'number' ? legacy.priceShelbyUSD : (legacy.priceUsd ?? 0),
         publisherAddress: legacy.publisherAddress ?? '',
+        downloads: typeof m.downloads === 'number' ? m.downloads : 0,
+        votes: typeof m.votes === 'number' ? m.votes : 0,
+        voters: Array.isArray(m.voters) ? m.voters : [],
       };
       return migrated;
     });
@@ -95,4 +104,32 @@ export function updateManifest(
   list[idx] = updated;
   writeAll(list);
   return updated;
+}
+
+/** Count one signed download for a listing. No-op when the listing is gone. */
+export function incrementDownloads(id: string): void {
+  const list = readAll();
+  const idx = list.findIndex((m) => m.id === id);
+  if (idx === -1) return;
+  list[idx] = { ...list[idx], downloads: (list[idx].downloads ?? 0) + 1 };
+  writeAll(list);
+}
+
+/**
+ * Apply a wallet's vote (+1/-1) to a listing. The same wallet can vote once;
+ * voting again removes the previous vote first. Returns the new vote delta.
+ */
+export function applyVote(id: string, voter: string, direction: 1 | -1): { votes: number; voters: number } | null {
+  const list = readAll();
+  const idx = list.findIndex((m) => m.id === id);
+  if (idx === -1) return null;
+  const m = list[idx];
+  const voters = Array.isArray(m.voters) ? [...m.voters] : [];
+  const existing = voters.findIndex((v) => v === voter);
+  if (existing !== -1) voters.splice(existing, 1);
+  voters.push(voter);
+  const votes = (m.votes ?? 0) + direction;
+  list[idx] = { ...m, votes, voters };
+  writeAll(list);
+  return { votes, voters: voters.length };
 }

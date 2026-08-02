@@ -97,13 +97,9 @@ export async function POST(request: Request) {
       });
     }
 
-    // Does the buyer need to initialize payment channels first?
-    let needsInitialize = false;
-    try {
-      await client.getChannelInfo({ sender: AccountAddress.fromString(b.buyer) });
-    } catch {
-      needsInitialize = true;
-    }
+    // A fresh buyer has no channel rows and must initialize the payment-channel resource first.
+    // The SDK returns [] rather than throwing when that resource is absent.
+    const needsInitialize = channels.length === 0;
 
     const quote = await prepareChannelCreation({
       sender: b.buyer,

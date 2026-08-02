@@ -88,6 +88,7 @@ export default function RangeRequest({
       // buyer pays gas; the server holds the channel key and settles withdrawals.
       let createHash: string | undefined;
       let pendingKeyId: string | undefined;
+      let channelId: string | undefined;
       if (!free) {
         if (!manifestId) {
           setStreamError('Payment needs a published manifest — publish the dataset to the market first.');
@@ -124,7 +125,9 @@ export default function RangeRequest({
           needsCreate?: boolean;
           needsInitialize?: boolean;
           amountShelbyUSD?: number;
+          channelId?: string;
         };
+        channelId = quote.channelId;
         setCheckoutState('payment');
         if (quote.needsCreate) {
           if (!quote.payload || !quote.pendingKeyId) {
@@ -157,6 +160,7 @@ export default function RangeRequest({
           records: isFile ? undefined : wanted,
           rangeBytes: isFile ? undefined : bytes,
           manifestId,
+          channelId,
           createHash,
           pendingKeyId,
           buyer: wallet.address,

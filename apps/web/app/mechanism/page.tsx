@@ -31,7 +31,7 @@ function CodeBlock({ children }: { children: string }) {
 
 export default function MechanismPage() {
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-[#ededed]">
+    <div className="h-screen overflow-hidden bg-[#0a0a0a] text-[#ededed]">
       <header className="sticky top-0 z-30 border-b border-[#262626] bg-[#0a0a0a]/95 backdrop-blur">
         <div className="mx-auto flex h-[64px] max-w-[1280px] items-center justify-between px-6 md:px-10">
           <Link href="/" className="text-[16px] font-medium tracking-[-0.03em] text-[#ededed] no-underline">Meris</Link>
@@ -42,7 +42,7 @@ export default function MechanismPage() {
         </div>
       </header>
 
-      <div className="mx-auto grid max-w-[1280px] lg:grid-cols-[220px_minmax(0,720px)] lg:gap-20">
+      <div className="mx-auto grid h-[calc(100svh-64px)] max-w-[1280px] overflow-hidden lg:grid-cols-[220px_minmax(0,720px)] lg:gap-20">
         <aside className="hidden border-r border-[#262626] lg:block">
           <div className="sticky top-[64px] py-12 pr-8">
             <p className="mb-5 text-[10px] uppercase tracking-[0.14em] text-[#666]">On this page</p>
@@ -61,7 +61,7 @@ export default function MechanismPage() {
           </div>
         </aside>
 
-        <main className="min-w-0 px-6 py-12 md:px-10 md:py-16 lg:px-0">
+        <main className="min-h-0 min-w-0 overflow-y-auto overscroll-contain px-6 py-12 md:px-10 md:py-16 lg:px-0">
           <div className="mb-10 flex gap-2 overflow-x-auto border-b border-[#262626] pb-4 text-[11px] uppercase tracking-[0.1em] text-[#777] lg:hidden">
             {sections.map(([id, label]) => <a key={id} href={`#${id}`} className="shrink-0 no-underline hover:text-white">{label}</a>)}
           </div>

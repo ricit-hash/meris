@@ -6,6 +6,8 @@ import Link from 'next/link';
 import CatalogFilters from './CatalogFilters';
 import CatalogNav from './CatalogNav';
 import DatasetCard from './DatasetCard';
+import AppMarketplaceFilters from './AppMarketplaceFilters';
+import AppDatasetCard from './AppDatasetCard';
 import GateLink from '../shared/GateLink';
 import { sampleDatasets, sortOptions, type SampleDataset } from './sample-data';
 import { getDatasets, draftToListing, type CatalogListing } from '../../lib/datasets';
@@ -210,94 +212,34 @@ export default function CatalogPage({ embedded = false }: { embedded?: boolean }
     <div className={embedded ? 'min-h-full bg-[#0a0a0a]' : 'ref-shell'}>
       {embedded ? null : <CatalogNav />}
       <main>
-        <section className="border-b border-[#262626] px-8 py-8 md:px-12 md:py-10">
-          <p className="ref-label">{embedded ? 'EXPLORE' : 'MARKETPLACE'}</p>
-          <div className="mt-4 flex flex-wrap items-end justify-between gap-6">
-            <div className="max-w-[52ch]">
-              <h1 className="text-[clamp(2rem,3.4vw,3.2rem)] font-light leading-[1.02] tracking-[-0.04em] text-[#ededed]">
-                Dataset catalog
-              </h1>
-              <p className="mt-3 text-[14px] leading-relaxed text-[#999]">
-                Public manifests, range-ready blobs on Shelby. Request a slice of records, not the archive.
-              </p>
+        {embedded ? (
+          <section className="border-b border-[#262626] px-6 py-7 md:px-10">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <div className="flex items-baseline gap-3"><h1 className="text-[clamp(1.8rem,3vw,2.6rem)] font-light leading-none tracking-[-0.045em] text-[#ededed]">Marketplace</h1><span className="font-mono text-[11px] text-[#666]">{filtered.length} listings</span></div>
+                <p className="mt-3 text-[13px] leading-6 text-[#888]">Explore datasets, compare terms, and request a slice.</p>
+              </div>
+              <label className="flex h-10 items-center gap-3 border border-[#303030] bg-[#101010] px-3 md:w-[220px]"><span className="text-[10px] uppercase tracking-[0.08em] text-[#666]">Sort</span><select value={sort} onChange={(e) => updateSort(e.target.value)} className="h-full w-full bg-transparent text-[12px] text-[#e5e5e5] outline-none"><option className="bg-[#171717]">{sortOptions[0]}</option>{sortOptions.slice(1).map((option) => <option key={option} className="bg-[#171717]">{option}</option>)}</select></label>
             </div>
-            <GateLink
-              href="/gate?intent=publish&next=/publish"
-              className="rounded-[12px] bg-[#f2f2f2] px-6 py-[12px] text-[14px] font-medium text-[#222] no-underline hover:opacity-85"
-            >
-              Publish a dataset
-            </GateLink>
-          </div>
+            <div className="mt-6 flex h-11 max-w-[640px] items-center gap-3 border border-[#303030] bg-[#101010] px-4"><svg aria-hidden="true" className="h-4 w-4 shrink-0 text-[#666]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg><input type="search" ref={searchRef} value={query} onChange={(e) => updateQuery(e.target.value)} placeholder="Search manifests, schema, publisher…" className="h-full w-full bg-transparent text-[13px] text-[#ededed] outline-none placeholder:text-[#666]" /><kbd className="hidden border border-[#2b2b2b] px-2 py-[2px] text-[10px] text-[#666] md:block">/</kbd></div>
+            <div className="mt-4 flex items-center gap-3 text-[11px] text-[#666]">{activeCount > 0 ? <button type="button" onClick={clearFilters} className="text-[#aaa] hover:text-white">Clear filters ({activeCount})</button> : <span>Use filters to narrow the market.</span>}</div>
+          </section>
+        ) : (
+          <section className="border-b border-[#262626] px-8 py-8 md:px-12 md:py-10">
+            <p className="ref-label">MARKETPLACE</p>
+            <div className="mt-4 flex flex-wrap items-end justify-between gap-6"><div className="max-w-[52ch]"><h1 className="text-[clamp(2rem,3.4vw,3.2rem)] font-light leading-[1.02] tracking-[-0.04em] text-[#ededed]">Dataset catalog</h1><p className="mt-3 text-[14px] leading-relaxed text-[#999]">Public manifests, range-ready blobs on Shelby. Request a slice of records, not the archive.</p></div><GateLink href="/gate?intent=publish&next=/publish" className="rounded-[12px] bg-[#f2f2f2] px-6 py-[12px] text-[14px] font-medium text-[#222] no-underline hover:opacity-85">Publish a dataset</GateLink></div>
+            <div className="mt-8 flex flex-col gap-3 md:flex-row md:items-center"><div className="flex h-11 flex-1 items-center gap-3 rounded-xl border border-[#303030] bg-[#101010] px-4"><svg aria-hidden="true" className="h-4 w-4 shrink-0 text-[#666]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg><input type="search" ref={searchRef} value={query} onChange={(e) => updateQuery(e.target.value)} placeholder="Search manifests, schema, publisher…" className="h-full w-full bg-transparent text-[14px] text-[#ededed] outline-none placeholder:text-[#666]" /><kbd className="hidden rounded-md border border-[#2b2b2b] px-2 py-[2px] text-[11px] text-[#666] md:block">/</kbd></div><label className="flex h-11 items-center gap-3 rounded-xl border border-[#303030] bg-[#101010] px-4 md:w-[220px]"><span className="text-[11px] uppercase tracking-[0.08em] text-[#666]">Sort</span><select value={sort} onChange={(e) => updateSort(e.target.value)} className="h-full w-full bg-transparent text-[13px] text-[#e5e5e5] outline-none">{sortOptions.map((option) => <option key={option} className="bg-[#171717]">{option}</option>)}</select></label></div>
+            <div className="mt-4 flex items-center gap-3"><span className="text-[12px] tabular-nums text-[#888]">{filtered.length} {filtered.length === 1 ? 'listing' : 'listings'}</span>{activeCount > 0 ? <button type="button" onClick={clearFilters} className="appearance-none text-[12px] text-[#d0d0d0] no-underline hover:underline">Clear filters ({activeCount})</button> : null}</div>
+          </section>
+        )}
 
-          <div className="mt-8 flex flex-col gap-3 md:flex-row md:items-center">
-            <div className="flex h-11 flex-1 items-center gap-3 rounded-xl border border-[#303030] bg-[#101010] px-4">
-              <svg aria-hidden="true" className="h-4 w-4 shrink-0 text-[#666]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <circle cx="11" cy="11" r="7" />
-                <path d="m21 21-4.3-4.3" />
-              </svg>
-              <input
-                type="search"
-                ref={searchRef}
-                value={query}
-                onChange={(e) => updateQuery(e.target.value)}
-                placeholder="Search manifests, schema, publisher…"
-                className="h-full w-full bg-transparent text-[14px] text-[#ededed] outline-none placeholder:text-[#666]"
-              />
-              <kbd className="hidden rounded-md border border-[#2b2b2b] px-2 py-[2px] text-[11px] text-[#666] md:block">/</kbd>
-            </div>
-            <label className="flex h-11 items-center gap-3 rounded-xl border border-[#303030] bg-[#101010] px-4 md:w-[220px]">
-              <span className="text-[11px] uppercase tracking-[0.08em] text-[#666]">Sort</span>
-              <select
-                value={sort}
-                onChange={(e) => updateSort(e.target.value)}
-                className="h-full w-full bg-transparent text-[13px] text-[#e5e5e5] outline-none"
-              >
-                {sortOptions.map((option) => (
-                  <option key={option} className="bg-[#171717]">
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-
-          <div className="mt-4 flex items-center gap-3">
-            <span className="text-[12px] tabular-nums text-[#888]">
-              {filtered.length} {filtered.length === 1 ? 'listing' : 'listings'}
-            </span>
-            {activeCount > 0 ? (
-              <button
-                type="button"
-                onClick={clearFilters}
-                className="appearance-none text-[12px] text-[#d0d0d0] no-underline hover:underline"
-              >
-                Clear filters ({activeCount})
-              </button>
-            ) : null}
-          </div>
-        </section>
-
-        <section className="flex gap-10 px-8 py-8 md:px-12 md:py-10">
-          <CatalogFilters active={active} onToggle={toggle} />
+        <section className={`flex gap-8 px-6 py-7 md:px-10 md:py-10 ${embedded ? 'bg-[#0d0d0d]' : 'px-8 md:px-12'}`}>
+          {embedded ? <AppMarketplaceFilters active={active} onToggle={toggle} /> : <CatalogFilters active={active} onToggle={toggle} />}
           {filtered.length === 0 ? (
-            <div className="flex min-w-0 flex-1 flex-col items-center justify-center rounded-xl border border-dashed border-[#2b2b2b] p-16 text-center">
-              <p className="text-[14px] text-[#888]">No datasets match.</p>
-              <p className="mt-2 max-w-[36ch] text-[12px] leading-5 text-[#666]">
-                Try a different search term or clear some filters.
-              </p>
-              <button
-                type="button"
-                onClick={resetAll}
-                className="mt-5 appearance-none rounded-[12px] border border-[#303030] px-5 py-2.5 text-[13px] font-medium text-[#a7a7a7] transition-colors hover:border-[#4a4a4a] hover:text-white"
-              >
-                Reset all
-              </button>
-            </div>
+            <div className="flex min-w-0 flex-1 flex-col items-center justify-center border border-dashed border-[#2b2b2b] p-16 text-center"><p className="text-[14px] text-[#888]">No datasets match.</p><p className="mt-2 max-w-[36ch] text-[12px] leading-5 text-[#666]">Try a different search term or clear some filters.</p><button type="button" onClick={resetAll} className="mt-5 border border-[#303030] px-5 py-2.5 text-[13px] font-medium text-[#a7a7a7] hover:border-[#4a4a4a] hover:text-white">Reset all</button></div>
           ) : (
-            <div className="grid min-w-0 flex-1 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {filtered.map((dataset) => (
-                <DatasetCard key={dataset.id} dataset={dataset} basePath={embedded ? '/marketplace' : '/catalog'} />
-              ))}
+            <div className={embedded ? 'min-w-0 flex-1' : 'grid min-w-0 flex-1 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3'}>
+              {filtered.map((dataset) => embedded ? <AppDatasetCard key={dataset.id} dataset={dataset} basePath="/marketplace" /> : <DatasetCard key={dataset.id} dataset={dataset} basePath="/catalog" />)}
             </div>
           )}
         </section>

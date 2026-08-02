@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getManifest } from '../../../../lib/manifest-store';
 import { parseBlobPath } from '../../../../lib/shelby';
-import { prepareChannelCreation, getMicropaymentClient } from '../../../../lib/payments';
+import { prepareChannelCreation, getMicropaymentClient, hasInitializedPaymentChannels } from '../../../../lib/payments';
 import { checkRateLimit } from '../../../../lib/rate-limit';
 import { AccountAddress } from '@aptos-labs/ts-sdk';
 import { calculateSlicePrice } from '../../../../lib/purchase-quote';
@@ -97,9 +97,7 @@ export async function POST(request: Request) {
       });
     }
 
-    // A fresh buyer has no channel rows and must initialize the payment-channel resource first.
-    // The SDK returns [] rather than throwing when that resource is absent.
-    const needsInitialize = channels.length === 0;
+    const needsInitialize = !(await hasInitializedPaymentChannels(b.buyer));
 
     const quote = await prepareChannelCreation({
       sender: b.buyer,

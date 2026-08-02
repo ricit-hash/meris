@@ -66,6 +66,13 @@ export function getMicropaymentClient(): ShelbyMicropaymentChannelClient | null 
   return micropayment;
 }
 
+export async function hasInitializedPaymentChannels(owner: string): Promise<boolean> {
+  const client = getShelbyAptos();
+  if (!client) throw new Error('Shelby is not configured. Add SHELBY_API_KEY to the server environment.');
+  const resources = await client.getAccountResources({ accountAddress: AccountAddress.fromString(owner) });
+  return resources.some((resource) => resource.type.endsWith('::micropayments::PaymentChannels'));
+}
+
 /**
  * Resolve the buyer's primary fungible-store address for ShelbyUSD.
  * Verified on testnet: `primary_store_address<Metadata>(owner, hex(metadata))`.

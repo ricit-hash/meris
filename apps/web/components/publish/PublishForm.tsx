@@ -77,6 +77,7 @@ export default function PublishForm({ address, username }: Props) {
           fullMessageSuffix?: string;
           publicKeyLength?: number;
           publicKeyPrefix?: string;
+          derivedAddress?: string;
         };
       };
       if (res.ok && data.ok && data.blobPath) {
@@ -92,7 +93,7 @@ export default function PublishForm({ address, username }: Props) {
       } else {
         setVerify('fail');
         const diagnostic = data.sigInfo
-          ? ` [sig ${data.sigInfo.sigLength ?? '?'}:${data.sigInfo.sigPrefix ?? '?'} · key ${data.sigInfo.publicKeyLength ?? '?'}:${data.sigInfo.publicKeyPrefix ?? '?'} · msg ${data.sigInfo.fullMessageLength ?? '?'}:${data.sigInfo.fullMessagePrefix ?? '?'}…${data.sigInfo.fullMessageSuffix ?? '?'}]`
+          ? ` [sig ${data.sigInfo.sigLength ?? '?'}:${data.sigInfo.sigPrefix ?? '?'} · key ${data.sigInfo.publicKeyLength ?? '?'}:${data.sigInfo.publicKeyPrefix ?? '?'} → ${data.sigInfo.derivedAddress ?? '?'} · msg ${data.sigInfo.fullMessageLength ?? '?'}:${data.sigInfo.fullMessagePrefix ?? '?'}…${data.sigInfo.fullMessageSuffix ?? '?'}]`
           : '';
         setVerifyMsg(`${data.error ?? 'Upload failed.'}${diagnostic}`);
       }

@@ -133,6 +133,7 @@ function verifySignature(params: SignatureParams): { ok: boolean; reason?: strin
         sigPrefix: params.signature.slice(0, 16),
         publicKeyLength: params.publicKeyHex.length,
         publicKeyPrefix: params.publicKeyHex.slice(0, 18),
+        derivedAddress: derived,
         fullMessageLength: params.fullMessage.length,
         fullMessagePrefix: params.fullMessage.slice(0, 60).replace(/\n/g, '\\n'),
         fullMessageSuffix: params.fullMessage.slice(-40).replace(/\n/g, '\\n'),

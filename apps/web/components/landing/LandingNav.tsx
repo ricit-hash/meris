@@ -14,7 +14,7 @@ export default function LandingNav() {
       <nav aria-label="Primary navigation" className="hidden rounded-full bg-[#1d1d1d] md:flex">
         {links.map((link) => <Link key={link.href} href={link.href}>{link.label}</Link>)}
       </nav>
-      <GateLink href="/gate" className="clarity-login">Go to app</GateLink>
+      <GateLink href="/gate?intent=app&next=/catalog" className="clarity-login">Go to app</GateLink>
     </header>
   );
 }

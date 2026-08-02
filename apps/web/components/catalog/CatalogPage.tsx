@@ -222,7 +222,7 @@ export default function CatalogPage() {
               </p>
             </div>
             <GateLink
-              href="/gate"
+              href="/gate?intent=publish&next=/publish"
               className="rounded-[12px] bg-[#f2f2f2] px-6 py-[12px] text-[14px] font-medium text-[#222] no-underline hover:opacity-85"
             >
               Publish a dataset

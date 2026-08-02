@@ -79,7 +79,7 @@ export default function RangeRequest({
       const { getConnectedWallet, signAndSubmitTransaction } = await import('../../lib/wallet/aptos-client');
       const wallet = await getConnectedWallet();
       if (!wallet?.address) {
-        router.push('/gate');
+        router.push(`/gate?intent=purchase&next=${encodeURIComponent(window.location.pathname)}`);
         return;
       }
       if (!canStream) {

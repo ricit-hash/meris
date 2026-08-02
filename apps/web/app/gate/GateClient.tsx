@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { gateCopy, parseGateIntent, safeGateNext } from '../../lib/gate-intent';
 import BrandLoader from '../../components/brand/BrandLoader';
 
 function sleep(ms: number) {
@@ -10,6 +11,9 @@ function sleep(ms: number) {
 
 export default function GatePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const copy = gateCopy(parseGateIntent(searchParams.get('intent')));
+  const nextPath = safeGateNext(searchParams.get('next'));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [sub, setSub] = useState('Connect a wallet to enter');
@@ -32,7 +36,7 @@ export default function GatePage() {
           setEnterLabel('Welcome back');
           setEntering(true);
           await sleep(520);
-          if (!cancelled) router.replace('/profile');
+          if (!cancelled) router.replace(nextPath);
           return;
         }
       } catch {
@@ -60,7 +64,7 @@ export default function GatePage() {
       setEnterLabel('Entering Meris');
       setEntering(true);
       await sleep(680);
-      router.replace('/profile');
+      router.replace(nextPath);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Connect failed';
       setError(msg);
@@ -78,9 +82,9 @@ export default function GatePage() {
   return (
     <main className="relative flex min-h-[100svh] items-center justify-center overflow-hidden bg-[#0a0a0a] px-6 py-12 text-[#ededed] [view-transition-name:publisher-gate]">
       <div className={`w-full max-w-[30rem] text-center transition-[opacity,filter] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] ${entering ? 'pointer-events-none opacity-35 blur-[2px] motion-reduce:blur-none' : ''}`}>
-                <p className="text-xs font-medium uppercase tracking-[0.12em] text-[#777]">Meris publisher access</p>
-                <h1 className="mt-5 font-[Newsreader,Georgia,serif] text-[clamp(3rem,7vw,5.75rem)] font-normal leading-[0.9] tracking-[-0.055em] text-[#ededed]">Sign in to publish.</h1>
-                <p className="mx-auto mt-6 max-w-[26rem] text-sm leading-6 text-[#999]">Connect an Aptos wallet to add dataset metadata and import an existing Shelby blob.</p>
+        <p className="text-xs font-medium uppercase tracking-[0.12em] text-[#777]">{copy.eyebrow}</p>
+                <h1 className="mt-5 font-[Newsreader,Georgia,serif] text-[clamp(3rem,7vw,5.75rem)] font-normal leading-[0.9] tracking-[-0.055em] text-[#ededed]">{copy.title}</h1>
+                <p className="mx-auto mt-6 max-w-[26rem] text-sm leading-6 text-[#999]">{copy.description}</p>
                 <button
                   type="button"
                   className={`mt-9 min-h-12 min-w-48 appearance-none rounded-full border border-[#f2f2f2] bg-[#f2f2f2] px-7 py-3 font-[inherit] text-[13px] font-medium text-[#222] transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] hover:bg-[#dededb] active:scale-[0.97] disabled:cursor-wait disabled:opacity-55 motion-reduce:transition-none motion-reduce:active:scale-100 ${busy ? 'animate-pulse' : ''}`}

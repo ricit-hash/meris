@@ -16,7 +16,7 @@ export default function LandingHero() {
         <p>Meris lets buyers inspect AI and Web3 datasets, choose a useful range, and pay for that range. Publishers keep the source data and listing terms under their control.</p>
         <div className="clarity-actions">
           <Link href="/catalog" className="clarity-action clarity-action-primary">Explore datasets</Link>
-          <GateLink href="/gate" className="clarity-action clarity-action-secondary">Publish a dataset</GateLink>
+          <GateLink href="/gate?intent=publish&next=/publish" className="clarity-action clarity-action-secondary">Publish a dataset</GateLink>
         </div>
       </div>
     </section>

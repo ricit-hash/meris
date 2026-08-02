@@ -63,7 +63,19 @@ export default function PublishForm({ address, username }: Props) {
       fd.append('fullMessage', signed.fullMessage);
       fd.append('expiryDays', String(expiryDays));
       const res = await fetch('/api/blobs/upload', { method: 'POST', body: fd });
-      const data = (await res.json()) as { ok?: boolean; blobPath?: string; size?: string; expiresAt?: number; error?: string };
+      const data = (await res.json()) as {
+        ok?: boolean;
+        blobPath?: string;
+        size?: string;
+        expiresAt?: number;
+        error?: string;
+        sigInfo?: {
+          sigLength?: number;
+          sigPrefix?: string;
+          fullMessageLength?: number;
+          fullMessagePrefix?: string;
+        };
+      };
       if (res.ok && data.ok && data.blobPath) {
         setBlobPath(data.blobPath);
         setFileSize(data.size ?? '');
@@ -76,7 +88,10 @@ export default function PublishForm({ address, username }: Props) {
         setVerifyMsg('Shelby not configured — file will be saved as a local draft.');
       } else {
         setVerify('fail');
-        setVerifyMsg(data.error ?? 'Upload failed.');
+        const diagnostic = data.sigInfo
+          ? ` [sig ${data.sigInfo.sigLength ?? '?'}:${data.sigInfo.sigPrefix ?? '?'} · msg ${data.sigInfo.fullMessageLength ?? '?'}:${data.sigInfo.fullMessagePrefix ?? '?'}]`
+          : '';
+        setVerifyMsg(`${data.error ?? 'Upload failed.'}${diagnostic}`);
       }
     } catch {
       setVerify('fail');

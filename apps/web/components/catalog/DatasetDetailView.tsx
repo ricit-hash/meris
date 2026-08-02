@@ -20,8 +20,9 @@ const DiscussionSection = dynamic(() => import('./DiscussionSection'), { ssr: tr
 
 const fmt = new Intl.NumberFormat('en-US');
 
-export default function DatasetDetailView({ id }: { id: string }) {
+export default function DatasetDetailView({ id, appMode = false }: { id: string; appMode?: boolean }) {
   const router = useRouter();
+  const backHref = appMode ? '/marketplace' : '/catalog';
   const [draft, setDraft] = useState<CatalogListing | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [delistState, setDelistState] = useState<'idle' | 'confirm' | 'busy'>('idle');
@@ -269,7 +270,7 @@ export default function DatasetDetailView({ id }: { id: string }) {
         setDelistState('idle');
         return;
       }
-      router.push('/catalog');
+      router.push(backHref);
     } catch {
       setDelistError('Delist failed — check the server.');
       setDelistState('idle');
@@ -279,8 +280,8 @@ export default function DatasetDetailView({ id }: { id: string }) {
   if (!listing) {
     if (!loaded) {
       return (
-        <div className="ref-shell">
-          <CatalogNav />
+        <div className={appMode ? 'min-h-full bg-[#0a0a0a]' : 'ref-shell'}>
+          {appMode ? null : <CatalogNav />}
           <main className="flex min-h-[50vh] items-center justify-center px-8">
             <div className="h-[5px] w-[140px] overflow-hidden rounded-full bg-[#262626]">
               <div className="h-full w-1/3 animate-[progress_1.2s_ease-in-out_infinite] rounded-full bg-[#d0d0d0]" />
@@ -290,14 +291,14 @@ export default function DatasetDetailView({ id }: { id: string }) {
       );
     }
     return (
-      <div className="ref-shell">
-        <CatalogNav />
+      <div className={appMode ? 'min-h-full bg-[#0a0a0a]' : 'ref-shell'}>
+        {appMode ? null : <CatalogNav />}
         <main className="flex min-h-[50vh] items-center justify-center px-8">
           <div className="text-center">
             <p className="ref-label">DATASET NOT FOUND</p>
             <p className="mt-4 text-[14px] text-[#999]">This listing does not exist or was removed.</p>
-            <Link href="/catalog" className="mt-6 inline-block text-[13px] text-[#d0d0d0] no-underline hover:underline">
-              ← Back to catalog
+            <Link href={backHref} className="mt-6 inline-block text-[13px] text-[#d0d0d0] no-underline hover:underline">
+              {appMode ? '← Back to marketplace' : '← Back to catalog'}
             </Link>
           </div>
         </main>
@@ -320,13 +321,13 @@ export default function DatasetDetailView({ id }: { id: string }) {
       ] as const;
 
   return (
-    <div className="ref-shell">
-      <CatalogNav />
+    <div className={appMode ? 'min-h-full bg-[#0a0a0a]' : 'ref-shell'}>
+      {appMode ? null : <CatalogNav />}
       <main>
         <section className="border-b border-[#262626] px-8 py-8 md:px-12 md:py-10">
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <Link href="/catalog" className="text-[13px] text-[#888] no-underline hover:text-white">
-              ← Back to catalog
+            <Link href={backHref} className="text-[13px] text-[#888] no-underline hover:text-white">
+              {appMode ? '← Back to marketplace' : '← Back to catalog'}
             </Link>
             <div className="flex items-center gap-2">
               {listing.isMine ? (

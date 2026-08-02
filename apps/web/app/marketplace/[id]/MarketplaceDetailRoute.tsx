@@ -31,5 +31,5 @@ export default function MarketplaceDetailRoute({ id }: { id: string }) {
   if (!address || !checked) return <BrandLoader label="Checking wallet" hint="Restoring your dataset view." />;
   if (!profile) { router.replace('/profile'); return <BrandLoader label="Profile needed" hint="Setting up your Meris workspace…" />; }
 
-  return <WorkspaceFrame address={address} profile={profile} title="Marketplace"><DatasetDetailView id={id} /></WorkspaceFrame>;
+  return <WorkspaceFrame address={address} profile={profile} title="Marketplace"><DatasetDetailView id={id} appMode /></WorkspaceFrame>;
 }

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import type { CatalogListing } from '../../lib/datasets';
 import { formatShelbyPrice } from './sample-data';
 
-export default function DatasetCard({ dataset }: { dataset: CatalogListing }) {
+export default function DatasetCard({ dataset, basePath = '/catalog' }: { dataset: CatalogListing; basePath?: string }) {
   const [copied, setCopied] = useState(false);
 
   async function copyId() {
@@ -20,7 +20,7 @@ export default function DatasetCard({ dataset }: { dataset: CatalogListing }) {
 
   return (
     <Link
-      href={`/catalog/${dataset.id}`}
+      href={`${basePath}/${dataset.id}`}
       className="group flex flex-col rounded-xl border border-[#303030] bg-[#171717] p-4 no-underline transition-[transform,border-color] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] hover:-translate-y-px hover:border-[#4a4a4a]"
     >
       <div className="flex items-start justify-between gap-3">

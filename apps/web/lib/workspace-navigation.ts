@@ -1,6 +1,6 @@
 export const workspaceNavigation = [
   { heading: null, items: [{ href: '/dashboard', label: 'Home' }] },
-  { heading: 'EXPLORE', items: [{ href: '/catalog', label: 'Marketplace' }] },
+  { heading: 'EXPLORE', items: [{ href: '/marketplace', label: 'Marketplace' }] },
   { heading: 'LIBRARY', items: [{ href: '/purchases', label: 'Purchases' }] },
   {
     heading: 'PUBLISH',

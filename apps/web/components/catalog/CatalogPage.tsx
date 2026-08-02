@@ -33,7 +33,7 @@ function matchesFilters(d: CatalogListing, active: Record<string, string[]>): bo
   return true;
 }
 
-export default function CatalogPage() {
+export default function CatalogPage({ embedded = false }: { embedded?: boolean }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [query, setQuery] = useState('');
@@ -72,7 +72,7 @@ export default function CatalogPage() {
     const cat = nextActive['Category'] ?? [];
     if (cat.length) p.set('cat', cat.join(','));
     const str = p.toString();
-    router.replace(str ? `/catalog?${str}` : '/catalog', { scroll: false });
+    router.replace(`${embedded ? '/marketplace' : '/catalog'}${str ? `?${str}` : ''}`, { scroll: false });
   }
 
   function updateQuery(v: string) {
@@ -207,11 +207,11 @@ export default function CatalogPage() {
   const activeCount = Object.values(active).reduce((sum, arr) => sum + arr.length, 0);
 
   return (
-    <div className="ref-shell">
-      <CatalogNav />
+    <div className={embedded ? 'min-h-full bg-[#0a0a0a]' : 'ref-shell'}>
+      {embedded ? null : <CatalogNav />}
       <main>
         <section className="border-b border-[#262626] px-8 py-8 md:px-12 md:py-10">
-          <p className="ref-label">MARKETPLACE</p>
+          <p className="ref-label">{embedded ? 'EXPLORE' : 'MARKETPLACE'}</p>
           <div className="mt-4 flex flex-wrap items-end justify-between gap-6">
             <div className="max-w-[52ch]">
               <h1 className="text-[clamp(2rem,3.4vw,3.2rem)] font-light leading-[1.02] tracking-[-0.04em] text-[#ededed]">
@@ -296,7 +296,7 @@ export default function CatalogPage() {
           ) : (
             <div className="grid min-w-0 flex-1 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {filtered.map((dataset) => (
-                <DatasetCard key={dataset.id} dataset={dataset} />
+                <DatasetCard key={dataset.id} dataset={dataset} basePath={embedded ? '/marketplace' : '/catalog'} />
               ))}
             </div>
           )}

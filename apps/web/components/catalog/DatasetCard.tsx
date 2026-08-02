@@ -27,16 +27,10 @@ export default function DatasetCard({ dataset }: { dataset: CatalogListing }) {
         <h2 className="truncate text-[14px] font-medium tracking-[-0.01em] text-[#e5e5e5]" title={dataset.title}>
           {dataset.title}
         </h2>
-        <div className="flex shrink-0 items-center gap-1.5">
-          {dataset.isMine ? (
-            <span className="rounded-full border border-[#4a4a42] bg-[#7bafa0]/10 px-2 py-[2px] text-[9px] uppercase tracking-[0.08em] text-[#7bafa0]">
-              Yours
-            </span>
-          ) : null}
-          <span className="flex items-center gap-1.5 rounded-full border border-[#3a4a42] bg-[#7bafa0]/10 px-2 py-[2px] text-[9px] uppercase tracking-[0.08em] text-[#7bafa0]">
-            <i className="h-[4px] w-[4px] rounded-full bg-[#7bafa0]" />
-            {dataset.range}
-          </span>
+        <div className="flex shrink-0 items-center gap-2 text-[9px] uppercase tracking-[0.1em]">
+          {dataset.isMine ? <span className="text-[#a7a7a7]">Yours</span> : null}
+          {dataset.isMine ? <span className="text-[#444]">·</span> : null}
+          <span className="text-[#777]">{dataset.kind === 'file' ? 'Full file' : 'Range'}</span>
         </div>
       </div>
 
@@ -69,7 +63,7 @@ export default function DatasetCard({ dataset }: { dataset: CatalogListing }) {
             <span
               className={`rounded-full border px-2 py-[2px] text-[10px] ${
                 dataset.hasRowIndex
-                  ? 'border-[#3a4a42] bg-[#7bafa0]/10 text-[#7bafa0]'
+                  ? 'border-[#3a3a3a] text-[#a7a7a7]'
                   : 'border-[#2b2b2b] text-[#777]'
               }`}
             >
@@ -85,7 +79,7 @@ export default function DatasetCard({ dataset }: { dataset: CatalogListing }) {
           </span>
           <span
             className={`ml-auto font-medium tabular-nums ${
-              dataset.priceShelbyUSD === 0 ? 'text-[#7bafa0]' : 'text-[#e5e5e5]'
+              dataset.priceShelbyUSD === 0 ? 'text-[#e5e5e5]' : 'text-[#e5e5e5]'
             }`}
           >
             {formatShelbyPrice(dataset.priceShelbyUSD)}

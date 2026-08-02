@@ -1,18 +1,12 @@
 import Link from 'next/link';
 import MerisWordmark from '../brand/MerisWordmark';
 import LogoutButton from './LogoutButton';
+import { workspaceNavigation } from '../../lib/workspace-navigation';
 
 type Props = {
   address: string;
   username: string;
 };
-
-const nav = [
-  { href: '/dashboard', label: 'Dashboard', active: true },
-  { href: '/catalog', label: 'Marketplace' },
-  { href: '/publish', label: 'Publish' },
-  { href: '/purchases', label: 'Purchases' },
-];
 
 export default function DashboardSidebar({ address, username }: Props) {
   return (
@@ -23,19 +17,24 @@ export default function DashboardSidebar({ address, username }: Props) {
         </Link>
       </div>
 
-      <nav className="flex flex-col gap-1 p-3">
-        {nav.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={`rounded-[10px] px-3 py-2.5 text-[14px] no-underline transition-colors ${
-              item.active
-                ? 'bg-[#1d1d1d] font-medium text-white'
-                : 'text-[#999] hover:bg-[#171717] hover:text-white'
-            }`}
-          >
-            {item.label}
-          </Link>
+      <nav aria-label="Workspace navigation" className="flex flex-col gap-5 p-3">
+        {workspaceNavigation.map((group) => (
+          <div key={group.heading ?? 'home'} className="flex flex-col gap-1">
+            {group.heading ? <p className="px-3 pb-1 text-[10px] uppercase tracking-[0.12em] text-[#555]">{group.heading}</p> : null}
+            {group.items.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`rounded-[10px] px-3 py-2.5 text-[14px] no-underline transition-colors ${
+                  item.label === 'Home'
+                    ? 'bg-[#1d1d1d] font-medium text-white'
+                    : 'text-[#999] hover:bg-[#171717] hover:text-white'
+                }`}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
         ))}
       </nav>
 

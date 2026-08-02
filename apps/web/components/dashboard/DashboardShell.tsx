@@ -40,9 +40,9 @@ export default function DashboardShell({ address, profile }: Props) {
         <div className="flex min-w-0 flex-1 flex-col lg:ml-[15rem]">
           <header className="flex h-[64px] shrink-0 items-center justify-between border-b border-[#262626] px-6 md:px-10">
             <div className="flex items-center gap-3">
-              <span className="text-[13px] text-[#666]">Publisher workspace</span>
+              <span className="text-[13px] text-[#666]">Meris workspace</span>
               <span className="text-[#2b2b2b]">/</span>
-              <span className="text-[13px] font-medium text-[#e5e5e5]">Dashboard</span>
+              <span className="text-[13px] font-medium text-[#e5e5e5]">Home</span>
             </div>
             <div className="flex items-center gap-3">
               <span className="hidden text-[13px] tabular-nums text-[#888] md:inline">
@@ -66,12 +66,10 @@ export default function DashboardShell({ address, profile }: Props) {
                     Overview
                   </p>
                   <h1 className="mt-3 text-[clamp(1.8rem,3vw,2.8rem)] font-light leading-[1.02] tracking-[-0.04em] text-[#ededed]">
-                    Your publishing workspace.
+                    Welcome back, @{profile.username}.
                   </h1>
                   <p className="mt-3 max-w-[52ch] text-sm leading-6 text-[#999]">
-                    Manifests, connected Shelby blobs, and live listings for{' '}
-                    <span className="text-[#e5e5e5]">@{profile.username}</span>. Publishing to the
-                    market opens with the backend.
+                    Explore datasets, track purchases, and publish when you are ready. Your workspace keeps the buyer and publisher paths in one place.
                   </p>
                 </div>
                 <Link
@@ -82,7 +80,7 @@ export default function DashboardShell({ address, profile }: Props) {
                 </Link>
               </div>
 
-              <div className="mt-8 overflow-hidden rounded-[16px] border border-[#303030] bg-[#171717]">
+              <div id="analysis" className="mt-8 overflow-hidden rounded-[16px] border border-[#303030] bg-[#171717]">
                 <div className="grid md:grid-cols-[1.5fr_1fr_1fr]">
                   <div className="p-6 md:p-7">
                     <LedgerRevenue address={address} />
@@ -105,7 +103,7 @@ export default function DashboardShell({ address, profile }: Props) {
               </div>
 
               <div className="mt-6 grid gap-3 lg:grid-cols-[minmax(0,1.7fr)_minmax(16rem,0.7fr)]">
-                <section className="rounded-[16px] border border-[#303030] bg-[#171717] p-6">
+                <section id="listings" className="rounded-[16px] border border-[#303030] bg-[#171717] p-6">
                   <div className="flex items-center justify-between">
                     <h2 className="text-[15px] font-medium tracking-[-0.01em] text-[#e5e5e5]">
                       Recent drafts

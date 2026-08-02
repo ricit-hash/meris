@@ -37,7 +37,7 @@ export default function DashboardRoute() {
   }, [router]);
 
   if (!address || !checked) {
-    return <BrandLoader label="Checking wallet" hint="Publisher access requires an active wallet session." />;
+    return <BrandLoader label="Checking wallet" hint="Restoring your Meris workspace." />;
   }
 
   if (!profile) {

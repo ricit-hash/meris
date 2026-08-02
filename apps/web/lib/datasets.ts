@@ -71,6 +71,8 @@ export type CatalogListing = {
   uploadedAt?: number;
   /** Epoch ms when the blob expires on Shelby (manifest listings). */
   expiresAt?: number;
+  /** True when the blob has a line index → exact row-boundary slicing. */
+  hasRowIndex?: boolean;
   isMine: boolean;
   kind: DeliveryKind;
 };

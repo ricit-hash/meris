@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import CatalogNav from './CatalogNav';
+import DatasetCard from './DatasetCard';
 import { getSampleDataset, formatShelbyPrice, type SampleDataset } from './sample-data';
 import { getDatasets, draftToListing, type CatalogListing } from '../../lib/datasets';
 import { getProfile } from '../../lib/profile';
@@ -27,6 +28,7 @@ export default function DatasetDetailView({ id }: { id: string }) {
   const [previewState, setPreviewState] = useState<'idle' | 'loading' | 'ok' | 'fail'>('idle');
   const [votes, setVotes] = useState(0);
   const [downloaded, setDownloaded] = useState(0);
+  const [related, setRelated] = useState<CatalogListing[]>([]);
 
   const sample: (SampleDataset & { isMine: false }) | undefined = useMemo(
     () => (getSampleDataset(id) ? { ...getSampleDataset(id)!, isMine: false } : undefined),
@@ -167,6 +169,53 @@ export default function DatasetDetailView({ id }: { id: string }) {
     }
   }
 
+  // Related datasets: same category, most downloaded first, excluding this one.
+  useEffect(() => {
+    if (!listing || !listing.id.startsWith('m-')) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch('/api/manifests');
+        if (cancelled || !res.ok) return;
+        const data = (await res.json()) as { manifests?: Manifest[] };
+        if (cancelled || !Array.isArray(data.manifests)) return;
+        const mine = data.manifests.find((m) => m.id === listing.id);
+        const category = mine?.category ?? listing.tags[0];
+        const relatedListings = data.manifests
+          .filter((m) => m.id !== listing.id && m.category === category)
+          .sort((a, b) => (b.downloads ?? 0) - (a.downloads ?? 0))
+          .slice(0, 3)
+          .map((m) => ({
+            id: m.id,
+            title: m.name,
+            publisher: m.publisher || 'publisher',
+            updated: 'Just now',
+            description: m.description || '',
+            tags: [m.category],
+            format: m.format,
+            size: m.fileSize,
+            license: m.license,
+            range: m.kind === 'file' ? 'Full file' : 'Range-ready',
+            requests: m.downloads ?? 0,
+            downloads: m.downloads ?? 0,
+            votes: m.votes ?? 0,
+            priceShelbyUSD: m.priceShelbyUSD,
+            blobPath: m.blobPath,
+            records: m.records,
+            updatedDays: 0,
+            isMine: false,
+            kind: m.kind,
+          }));
+        if (!cancelled) setRelated(relatedListings);
+      } catch {
+        // ignore — related is best-effort
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [listing?.id]);
+
   async function handleDelist() {
     if (delistState !== 'confirm' || !listing) return;
     setDelistState('busy');
@@ -206,6 +255,18 @@ export default function DatasetDetailView({ id }: { id: string }) {
   }
 
   if (!listing) {
+    if (!loaded) {
+      return (
+        <div className="ref-shell">
+          <CatalogNav />
+          <main className="flex min-h-[50vh] items-center justify-center px-8">
+            <div className="h-[5px] w-[140px] overflow-hidden rounded-full bg-[#262626]">
+              <div className="h-full w-1/3 animate-[progress_1.2s_ease-in-out_infinite] rounded-full bg-[#7bafa0]" />
+            </div>
+          </main>
+        </div>
+      );
+    }
     return (
       <div className="ref-shell">
         <CatalogNav />
@@ -443,6 +504,19 @@ export default function DatasetDetailView({ id }: { id: string }) {
               />
             </div>
           </div>
+
+          {related.length > 0 ? (
+            <div className="mt-14">
+              <p className="ref-label">
+                MORE IN {(listing.tags[0] ?? 'THIS CATEGORY').toUpperCase()}
+              </p>
+              <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {related.map((r) => (
+                  <DatasetCard key={r.id} dataset={r} />
+                ))}
+              </div>
+            </div>
+          ) : null}
         </section>
       </main>
       <footer className="border-t border-[#2b2b2b] px-8 py-8 md:px-12">

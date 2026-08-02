@@ -3,12 +3,26 @@ import { listManifests, createManifest, type ManifestCategory } from '../../../l
 import { parseBlobPath } from '../../../lib/shelby';
 import { recoverPublisherAddress } from '../../../lib/wallet-auth';
 import { checkRateLimit } from '../../../lib/rate-limit';
+import { getRowIndexLineCount } from '../../../lib/row-index-store';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
-  return NextResponse.json({ manifests: listManifests() });
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const publisher = url.searchParams.get('publisher')?.trim().toLowerCase() ?? '';
+  const manifests = listManifests()
+    .filter((m) => !publisher || (m.publisher ?? '').trim().toLowerCase() === publisher)
+    .map((m) => {
+      const parsed = parseBlobPath(m.blobPath);
+      const totalLines = parsed ? getRowIndexLineCount(parsed.account, parsed.name) : undefined;
+      return {
+        ...m,
+        hasRowIndex: totalLines !== undefined,
+        totalLines,
+      };
+    });
+  return NextResponse.json({ manifests });
 }
 
 const CATEGORIES = new Set(['AI-ready', 'Web3', 'Research', 'Agent']);

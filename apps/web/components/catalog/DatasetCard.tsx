@@ -1,8 +1,23 @@
+'use client';
+
+import { useState } from 'react';
 import Link from 'next/link';
 import type { CatalogListing } from '../../lib/datasets';
 import { formatShelbyPrice } from './sample-data';
 
 export default function DatasetCard({ dataset }: { dataset: CatalogListing }) {
+  const [copied, setCopied] = useState(false);
+
+  async function copyId() {
+    try {
+      await navigator.clipboard.writeText(dataset.id);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1200);
+    } catch {
+      // clipboard unavailable — ignore
+    }
+  }
+
   return (
     <Link
       href={`/catalog/${dataset.id}`}
@@ -26,7 +41,14 @@ export default function DatasetCard({ dataset }: { dataset: CatalogListing }) {
       </div>
 
       <p className="mt-1 text-[11px] text-[#7bafa0]">
-        {dataset.publisher} <span className="text-[#555]">· {dataset.updated}</span>
+        <Link
+          href={`/u/${encodeURIComponent(dataset.publisher)}`}
+          onClick={(e) => e.stopPropagation()}
+          className="no-underline hover:underline"
+        >
+          {dataset.publisher}
+        </Link>{' '}
+        <span className="text-[#555]">· {dataset.updated}</span>
       </p>
 
       <p className="mt-2 line-clamp-2 min-h-[2.6em] text-[12px] leading-[1.3] text-[#999]">
@@ -43,6 +65,17 @@ export default function DatasetCard({ dataset }: { dataset: CatalogListing }) {
               {tag}
             </span>
           ))}
+          {dataset.hasRowIndex !== undefined ? (
+            <span
+              className={`rounded-full border px-2 py-[2px] text-[10px] ${
+                dataset.hasRowIndex
+                  ? 'border-[#3a4a42] bg-[#7bafa0]/10 text-[#7bafa0]'
+                  : 'border-[#2b2b2b] text-[#777]'
+              }`}
+            >
+              {dataset.hasRowIndex ? 'exact slice' : 'approximate'}
+            </span>
+          ) : null}
         </div>
         <div className="mt-3 flex items-center gap-3 border-t border-[#262626] pt-2.5 text-[11px] text-[#777]">
           <span className="uppercase">{dataset.format}</span>
@@ -58,6 +91,19 @@ export default function DatasetCard({ dataset }: { dataset: CatalogListing }) {
             {formatShelbyPrice(dataset.priceShelbyUSD)}
           </span>
         </div>
+        {dataset.id.startsWith('m-') ? (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              void copyId();
+            }}
+            className="mt-2 appearance-none text-[10px] uppercase tracking-[0.08em] text-[#666] transition-colors hover:text-[#a7a7a7]"
+          >
+            {copied ? 'Copied ✓' : 'Copy ID'}
+          </button>
+        ) : null}
       </div>
     </Link>
   );

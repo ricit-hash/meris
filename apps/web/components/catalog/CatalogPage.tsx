@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import CatalogFilters from './CatalogFilters';
 import CatalogNav from './CatalogNav';
@@ -33,11 +34,78 @@ function matchesFilters(d: CatalogListing, active: Record<string, string[]>): bo
 }
 
 export default function CatalogPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [query, setQuery] = useState('');
   const [active, setActive] = useState<Record<string, string[]>>({});
   const [sort, setSort] = useState('Most requested');
   const [drafts, setDrafts] = useState<CatalogListing[]>([]);
   const [serverManifests, setServerManifests] = useState<CatalogListing[]>([]);
+  const searchRef = useRef<HTMLInputElement | null>(null);
+
+  // Shareable catalog state: the URL is the source of truth for reads.
+  // Back/forward navigation syncs state from the query params.
+  useEffect(() => {
+    setQuery(searchParams.get('q') ?? '');
+    const s = searchParams.get('sort');
+    setSort(s && (sortOptions as readonly string[]).includes(s) ? s : 'Most requested');
+    const cat = searchParams.get('cat');
+    setActive(cat ? { Category: cat.split(',') } : {});
+  }, [searchParams]);
+
+  // Keyboard shortcut: "/" focuses search.
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (e.key !== '/' || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      e.preventDefault();
+      searchRef.current?.focus();
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
+  function pushUrl(nextQ: string, nextSort: string, nextActive: Record<string, string[]>) {
+    const p = new URLSearchParams();
+    if (nextQ.trim()) p.set('q', nextQ.trim());
+    if (nextSort && nextSort !== 'Most requested') p.set('sort', nextSort);
+    const cat = nextActive['Category'] ?? [];
+    if (cat.length) p.set('cat', cat.join(','));
+    const str = p.toString();
+    router.replace(str ? `/catalog?${str}` : '/catalog', { scroll: false });
+  }
+
+  function updateQuery(v: string) {
+    setQuery(v);
+    pushUrl(v, sort, active);
+  }
+
+  function updateSort(v: string) {
+    setSort(v);
+    pushUrl(query, v, active);
+  }
+
+  function toggle(group: string, option: string) {
+    setActive((prev) => {
+      const current = prev[group] ?? [];
+      const next = current.includes(option)
+        ? { ...prev, [group]: current.filter((o) => o !== option) }
+        : { ...prev, [group]: [...current, option] };
+      pushUrl(query, sort, next);
+      return next;
+    });
+  }
+
+  function clearFilters() {
+    setActive({});
+    pushUrl(query, sort, {});
+  }
+
+  function resetAll() {
+    setQuery('');
+    setActive({});
+    pushUrl('', sort, {});
+  }
 
   // Samples are stable at SSR; publisher drafts live in localStorage and are
   // loaded after mount so server and client HTML match on hydration.
@@ -79,6 +147,7 @@ export default function CatalogPage() {
             requests: m.downloads ?? 0,
             downloads: m.downloads ?? 0,
             votes: m.votes ?? 0,
+            hasRowIndex: (m as Manifest & { hasRowIndex?: boolean }).hasRowIndex,
             priceShelbyUSD: m.priceShelbyUSD,
             blobPath: m.blobPath,
             records: m.records,
@@ -100,16 +169,6 @@ export default function CatalogPage() {
     () => [...serverManifests, ...drafts, ...samples],
     [serverManifests, drafts, samples],
   );
-
-  function toggle(group: string, option: string) {
-    setActive((prev) => {
-      const current = prev[group] ?? [];
-      const next = current.includes(option)
-        ? current.filter((o) => o !== option)
-        : [...current, option];
-      return { ...prev, [group]: next };
-    });
-  }
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -178,8 +237,9 @@ export default function CatalogPage() {
               </svg>
               <input
                 type="search"
+                ref={searchRef}
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => updateQuery(e.target.value)}
                 placeholder="Search manifests, schema, publisher…"
                 className="h-full w-full bg-transparent text-[14px] text-[#ededed] outline-none placeholder:text-[#666]"
               />
@@ -189,7 +249,7 @@ export default function CatalogPage() {
               <span className="text-[11px] uppercase tracking-[0.08em] text-[#666]">Sort</span>
               <select
                 value={sort}
-                onChange={(e) => setSort(e.target.value)}
+                onChange={(e) => updateSort(e.target.value)}
                 className="h-full w-full bg-transparent text-[13px] text-[#e5e5e5] outline-none"
               >
                 {sortOptions.map((option) => (
@@ -208,7 +268,7 @@ export default function CatalogPage() {
             {activeCount > 0 ? (
               <button
                 type="button"
-                onClick={() => setActive({})}
+                onClick={clearFilters}
                 className="appearance-none text-[12px] text-[#7bafa0] no-underline hover:underline"
               >
                 Clear filters ({activeCount})
@@ -227,10 +287,7 @@ export default function CatalogPage() {
               </p>
               <button
                 type="button"
-                onClick={() => {
-                  setQuery('');
-                  setActive({});
-                }}
+                onClick={resetAll}
                 className="mt-5 appearance-none rounded-[12px] border border-[#303030] px-5 py-2.5 text-[13px] font-medium text-[#a7a7a7] transition-colors hover:border-[#4a4a4a] hover:text-white"
               >
                 Reset all

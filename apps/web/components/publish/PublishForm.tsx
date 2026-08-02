@@ -143,7 +143,7 @@ export default function PublishForm({ address, username }: Props) {
   }
 
   const inputClass =
-    'w-full rounded-[12px] border border-[#303030] bg-[#0a0a0a] px-4 py-3 text-[14px] text-[#ededed] outline-none transition-colors placeholder:text-[#555] focus:border-[#7bafa0]';
+    'w-full rounded-[12px] border border-[#303030] bg-[#0a0a0a] px-4 py-3 text-[14px] text-[#ededed] outline-none transition-colors placeholder:text-[#555] focus:border-[#f2f2f2]';
   const labelClass = 'text-[11px] font-medium uppercase tracking-[0.1em] text-[#888]';
 
   async function submit(e: React.FormEvent) {
@@ -267,8 +267,8 @@ export default function PublishForm({ address, username }: Props) {
           </nav>
           <div className="mt-auto flex flex-col gap-4 p-4">
             <div className="rounded-[12px] border border-[#303030] bg-[#171717] p-4">
-              <p className="flex items-center gap-2 text-[10px] uppercase tracking-[0.1em] text-[#7bafa0]">
-                <i className="h-[5px] w-[5px] rounded-full bg-[#7bafa0]" />
+              <p className="flex items-center gap-2 text-[10px] uppercase tracking-[0.1em] text-[#d0d0d0]">
+                <i className="h-[5px] w-[5px] rounded-full bg-[#d0d0d0]" />
                 Wallet connected
               </p>
               <p className="mt-3 break-all text-[12px] tabular-nums leading-5 text-[#999]">
@@ -354,7 +354,7 @@ export default function PublishForm({ address, username }: Props) {
                         <button
                           type="button"
                           onClick={() => setKind('range')}
-                          className={`appearance-none rounded-[12px] border px-4 py-3 text-left transition-colors ${kind === 'range' ? 'border-[#7bafa0] bg-[#7bafa0]/10' : 'border-[#303030] hover:border-[#4a4a4a]'}`}
+                          className={`appearance-none rounded-[12px] border px-4 py-3 text-left transition-colors ${kind === 'range' ? 'border-[#f2f2f2] bg-[#f2f2f2]/[0.06]' : 'border-[#303030] hover:border-[#4a4a4a]'}`}
                         >
                           <span className="block text-[13px] font-medium text-[#e5e5e5]">Range-ready</span>
                           <span className="mt-1 block text-[11px] leading-4 text-[#888]">Dataset — buyers pick a slice of records</span>
@@ -362,7 +362,7 @@ export default function PublishForm({ address, username }: Props) {
                         <button
                           type="button"
                           onClick={() => setKind('file')}
-                          className={`appearance-none rounded-[12px] border px-4 py-3 text-left transition-colors ${kind === 'file' ? 'border-[#7bafa0] bg-[#7bafa0]/10' : 'border-[#303030] hover:border-[#4a4a4a]'}`}
+                          className={`appearance-none rounded-[12px] border px-4 py-3 text-left transition-colors ${kind === 'file' ? 'border-[#f2f2f2] bg-[#f2f2f2]/[0.06]' : 'border-[#303030] hover:border-[#4a4a4a]'}`}
                         >
                           <span className="block text-[13px] font-medium text-[#e5e5e5]">Full file</span>
                           <span className="mt-1 block text-[11px] leading-4 text-[#888]">Config / prompt / SOUL.md — sold whole</span>
@@ -414,7 +414,7 @@ export default function PublishForm({ address, username }: Props) {
                         </button>
                       </div>
                       {verifyMsg ? (
-                        <span className={`mt-2 block text-[12px] ${verify === 'ok' ? 'text-[#7bafa0]' : 'text-[#e06c5b]'}`}>
+                        <span className={`mt-2 block text-[12px] ${verify === 'ok' ? 'text-[#d0d0d0]' : 'text-[#e06c5b]'}`}>
                           {verifyMsg}
                         </span>
                       ) : null}
@@ -490,8 +490,7 @@ export default function PublishForm({ address, username }: Props) {
                     </label>
                   </div>
                   {free ? (
-                    <p className="mt-4 inline-flex items-center gap-2 rounded-full border border-[#3a4a42] bg-[#7bafa0]/10 px-3 py-1.5 text-[11px] uppercase tracking-[0.08em] text-[#7bafa0]">
-                      <i className="h-[5px] w-[5px] rounded-full bg-[#7bafa0]" />
+                    <p className="mt-4 text-[11px] uppercase tracking-[0.1em] text-[#a7a7a7]">
                       Free · range-ready
                     </p>
                   ) : null}

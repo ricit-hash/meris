@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import DashboardSidebar from './DashboardSidebar';
+import WorkspaceFrame from './WorkspaceFrame';
 import LedgerRevenue from './LedgerRevenue';
 import ChannelPanel from './ChannelPanel';
 import { getDatasets, type DatasetDraft } from '../../lib/datasets';
@@ -33,43 +33,18 @@ export default function DashboardShell({ address, profile }: Props) {
     { label: 'Published', value: '0', hint: 'Live on market' },
   ];
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-[#ededed]">
-      <div className="flex min-h-screen">
-        <DashboardSidebar address={address} username={profile.username} />
-
-        <div className="flex min-w-0 flex-1 flex-col lg:ml-[15rem]">
-          <header className="flex h-[64px] shrink-0 items-center justify-between border-b border-[#262626] px-6 md:px-10">
-            <div className="flex items-center gap-3">
-              <span className="text-[13px] text-[#666]">Meris workspace</span>
-              <span className="text-[#2b2b2b]">/</span>
-              <span className="text-[13px] font-medium text-[#e5e5e5]">Analysis</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="hidden text-[13px] tabular-nums text-[#888] md:inline">
-                @{profile.username}
-              </span>
-              <span className="hidden rounded-full border border-[#303030] px-3 py-1.5 text-[12px] tabular-nums text-[#a7a7a7] lg:inline">
-                {address.slice(0, 6)}…{address.slice(-4)}
-              </span>
-              <span className="flex items-center gap-2 rounded-full border border-[#3a4a42] bg-[#7bafa0]/10 px-3 py-1.5 text-[10px] uppercase tracking-[0.08em] text-[#7bafa0] lg:hidden">
-                <i className="h-[5px] w-[5px] rounded-full bg-[#7bafa0]" />
-                Connected
-              </span>
-            </div>
-          </header>
-
-          <main className="flex-1 overflow-y-auto p-6 md:p-10">
+    <WorkspaceFrame address={address} profile={profile} title="Analytics">
             <div className="mx-auto max-w-[76rem]">
               <div className="flex flex-wrap items-end justify-between gap-4">
                 <div>
                   <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-[#666]">
-                    Overview
+                    Analytics
                   </p>
                   <h1 className="mt-3 text-[clamp(1.8rem,3vw,2.8rem)] font-light leading-[1.02] tracking-[-0.04em] text-[#ededed]">
-                    Welcome back, @{profile.username}.
+                    Publisher analytics.
                   </h1>
                   <p className="mt-3 max-w-[52ch] text-sm leading-6 text-[#999]">
-                    Explore datasets, track purchases, and publish when you are ready. Your workspace keeps the buyer and publisher paths in one place.
+                    Monitor revenue, drafts, delivery channels, and listing activity from one workspace.
                   </p>
                 </div>
                 <Link
@@ -182,9 +157,6 @@ export default function DashboardShell({ address, profile }: Props) {
                 </aside>
               </div>
             </div>
-          </main>
-        </div>
-      </div>
-    </div>
+  </WorkspaceFrame>
   );
 }

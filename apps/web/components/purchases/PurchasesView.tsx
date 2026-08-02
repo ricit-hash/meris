@@ -100,10 +100,10 @@ export default function PurchasesView({ address }: { address: string }) {
   return (
     <main className="px-6 py-10 md:px-10 md:py-12">
         <div className="mx-auto max-w-[76rem]">
-          <p className="ref-label">PURCHASES</p>
+          <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-[#666]">Purchases</p>
           <div>
-            <h1 className="text-[clamp(2.2rem,4.4vw,3.6rem)] font-light leading-[0.95] tracking-[-0.05em] text-[#ededed]">
-              Datasets you&apos;ve bought.
+            <h1 className="mt-3 text-[clamp(1.8rem,3vw,2.8rem)] font-light leading-[1.02] tracking-[-0.04em] text-[#ededed]">
+              Your purchases.
             </h1>
             <p className="mt-4 max-w-[52ch] text-[14px] leading-7 text-[#999]">
               Every paid and free request is recorded here. Access stays available after the

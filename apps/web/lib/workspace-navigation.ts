@@ -5,7 +5,7 @@ export const workspaceNavigation = [
   {
     heading: 'PUBLISH',
     items: [
-      { href: '/analysis', label: 'Analysis' },
+      { href: '/analysis', label: 'Analytics' },
       { href: '/analysis#listings', label: 'Listings' },
       { href: '/publish', label: 'Publish' },
     ],

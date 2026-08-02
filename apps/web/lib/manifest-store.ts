@@ -11,29 +11,33 @@ export type Manifest = {
   category: ManifestCategory;
   format: string;
   license: string;
-  /** ShelbyUSD. 0 = free listing. */
   priceShelbyUSD: number;
   kind: 'range' | 'file';
   blobPath: string;
   fileSize: string;
   records: number;
   publisher: string;
-  /** Wallet address of the publisher — payment receiver. */
   publisherAddress: string;
-  /** Epoch ms when the blob was uploaded to Shelby. Blobs expire after upload. */
   uploadedAt?: number;
-  /** Epoch ms when the blob expires on Shelby. */
   expiresAt?: number;
-  /** Number of signed download URLs issued for this listing. */
   downloads?: number;
-  /** Vote delta (upvotes - downvotes). */
   votes?: number;
-  /** Wallets that voted (dedupe). */
   voters?: string[];
+  /** Immutable dataset version. Existing manifests migrate to version 1. */
+  version: number;
+  /** Previous version in this immutable chain. */
+  parentManifestId?: string;
+  /** First manifest in this immutable chain. */
+  rootManifestId: string;
+  /** Publisher-supplied summary of what changed in this version. */
+  changelog?: string;
   createdAt: number;
 };
 
-type ManifestInput = Omit<Manifest, 'id' | 'createdAt'>;
+type ManifestInput = Omit<Manifest, 'id' | 'createdAt' | 'version' | 'rootManifestId'> & {
+  version?: number;
+  rootManifestId?: string;
+};
 
 function storePath(): string {
   return process.env.MANIFEST_FILE ?? path.join(process.cwd(), 'data', 'manifests.json');
@@ -42,21 +46,18 @@ function storePath(): string {
 function readAll(): Manifest[] {
   try {
     const raw = readFileSync(storePath(), 'utf8');
-    const parsed = JSON.parse(raw) as Manifest[];
+    const parsed = JSON.parse(raw) as Array<Partial<Manifest> & { priceUsd?: number }>;
     if (!Array.isArray(parsed)) return [];
-    // Migrate manifests written before the USD -> ShelbyUSD rename.
-    return parsed.map((m) => {
-      const legacy = m as Manifest & { priceUsd?: number };
-      const migrated: Manifest = {
-        ...m,
-        priceShelbyUSD: typeof legacy.priceShelbyUSD === 'number' ? legacy.priceShelbyUSD : (legacy.priceUsd ?? 0),
-        publisherAddress: legacy.publisherAddress ?? '',
-        downloads: typeof m.downloads === 'number' ? m.downloads : 0,
-        votes: typeof m.votes === 'number' ? m.votes : 0,
-        voters: Array.isArray(m.voters) ? m.voters : [],
-      };
-      return migrated;
-    });
+    return parsed.map((m) => ({
+      ...m,
+      priceShelbyUSD: typeof m.priceShelbyUSD === 'number' ? m.priceShelbyUSD : (m.priceUsd ?? 0),
+      publisherAddress: m.publisherAddress ?? '',
+      downloads: typeof m.downloads === 'number' ? m.downloads : 0,
+      votes: typeof m.votes === 'number' ? m.votes : 0,
+      voters: Array.isArray(m.voters) ? m.voters : [],
+      version: typeof m.version === 'number' && m.version > 0 ? m.version : 1,
+      rootManifestId: m.rootManifestId ?? m.id ?? '',
+    })) as Manifest[];
   } catch {
     return [];
   }
@@ -70,14 +71,37 @@ export function listManifests(): Manifest[] {
   return readAll();
 }
 
+/** Catalog view: one current manifest per immutable dataset chain. */
+export function listLatestManifests(): Manifest[] {
+  const latest = new Map<string, Manifest>();
+  for (const manifest of readAll()) {
+    const root = manifest.rootManifestId || manifest.id;
+    const existing = latest.get(root);
+    if (!existing || manifest.version > existing.version || (manifest.version === existing.version && manifest.createdAt > existing.createdAt)) {
+      latest.set(root, manifest);
+    }
+  }
+  return [...latest.values()].sort((a, b) => b.createdAt - a.createdAt);
+}
+
 export function getManifest(id: string): Manifest | undefined {
   return readAll().find((m) => m.id === id);
 }
 
+export function getManifestVersions(id: string): Manifest[] {
+  const manifest = getManifest(id);
+  if (!manifest) return [];
+  const root = manifest.rootManifestId || manifest.id;
+  return readAll().filter((m) => (m.rootManifestId || m.id) === root).sort((a, b) => b.version - a.version);
+}
+
 export function createManifest(input: ManifestInput): Manifest {
+  const id = `m-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
   const manifest: Manifest = {
     ...input,
-    id: `m-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    id,
+    version: input.version ?? 1,
+    rootManifestId: input.rootManifestId ?? id,
     createdAt: Date.now(),
   };
   const list = readAll();
@@ -86,7 +110,31 @@ export function createManifest(input: ManifestInput): Manifest {
   return manifest;
 }
 
-/** Remove a manifest from the store. Returns true when it existed. */
+/** Create a new immutable version; the parent manifest is never mutated. */
+export function createManifestVersion(
+  id: string,
+  updates: Partial<Pick<Manifest, 'description' | 'priceShelbyUSD' | 'license' | 'format'>> & { changelog?: string },
+): Manifest {
+  const list = readAll();
+  const current = list.find((m) => m.id === id);
+  if (!current) throw new Error('Manifest not found.');
+  const next: Manifest = {
+    ...current,
+    ...updates,
+    id: `m-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    version: current.version + 1,
+    parentManifestId: current.id,
+    rootManifestId: current.rootManifestId || current.id,
+    createdAt: Date.now(),
+    downloads: 0,
+    votes: 0,
+    voters: [],
+  };
+  list.unshift(next);
+  writeAll(list);
+  return next;
+}
+
 export function deleteManifest(id: string): boolean {
   const list = readAll();
   const next = list.filter((m) => m.id !== id);
@@ -95,20 +143,14 @@ export function deleteManifest(id: string): boolean {
   return true;
 }
 
+/** @deprecated Use createManifestVersion. Kept as a safe immutable alias for callers. */
 export function updateManifest(
   id: string,
-  updates: Partial<Pick<Manifest, 'description' | 'priceShelbyUSD' | 'license' | 'format'>>,
+  updates: Partial<Pick<Manifest, 'description' | 'priceShelbyUSD' | 'license' | 'format'>> & { changelog?: string },
 ): Manifest {
-  const list = readAll();
-  const idx = list.findIndex((m) => m.id === id);
-  if (idx === -1) throw new Error('Manifest not found.');
-  const updated: Manifest = { ...list[idx], ...updates };
-  list[idx] = updated;
-  writeAll(list);
-  return updated;
+  return createManifestVersion(id, updates);
 }
 
-/** Count one signed download for a listing. No-op when the listing is gone. */
 export function incrementDownloads(id: string): void {
   const list = readAll();
   const idx = list.findIndex((m) => m.id === id);
@@ -117,10 +159,6 @@ export function incrementDownloads(id: string): void {
   writeAll(list);
 }
 
-/**
- * Apply a wallet's vote (+1/-1) to a listing. The same wallet can vote once;
- * voting again removes the previous vote first. Returns the new vote delta.
- */
 export function applyVote(id: string, voter: string, direction: 1 | -1): { votes: number; voters: number } | null {
   const list = readAll();
   const idx = list.findIndex((m) => m.id === id);

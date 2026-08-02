@@ -25,6 +25,7 @@ export default function EditListingView({ id, address }: { id: string; address: 
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
   const [license, setLicense] = useState('');
+  const [changelog, setChangelog] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -91,6 +92,7 @@ export default function EditListingView({ id, address }: { id: string; address: 
           description: description.trim(),
           license: license.trim(),
           ...(Number.isFinite(priceNum) ? { priceShelbyUSD: priceNum } : {}),
+          changelog: changelog.trim(),
         }),
       });
       if (res.status === 403) {
@@ -102,7 +104,8 @@ export default function EditListingView({ id, address }: { id: string; address: 
         setError(data.error ?? 'Save failed.');
         return;
       }
-      router.push(`/catalog/${id}`);
+      const data = (await res.json()) as { manifest?: { id?: string } };
+      router.push(`/catalog/${data.manifest?.id ?? id}`);
     } catch {
       setError('Save failed — check the server.');
     } finally {
@@ -186,6 +189,20 @@ export default function EditListingView({ id, address }: { id: string; address: 
                       onChange={(e) => setLicense(e.target.value)}
                       placeholder="ODbL, CC BY 4.0, custom…"
                       className="mt-2 w-full rounded-[12px] border border-[#303030] bg-[#171717] px-4 py-3 text-[14px] text-[#e5e5e5] placeholder-[#666] outline-none transition-colors focus:border-[#4a4a4a]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="ref-label" htmlFor="edit-changelog">
+                      CHANGELOG · WHAT CHANGED IN THIS VERSION
+                    </label>
+                    <textarea
+                      id="edit-changelog"
+                      value={changelog}
+                      onChange={(e) => setChangelog(e.target.value)}
+                      rows={3}
+                      placeholder="Updated schema, added rows, corrected timestamps…"
+                      className="mt-2 w-full rounded-[12px] border border-[#303030] bg-[#171717] px-4 py-3 text-[14px] leading-6 text-[#e5e5e5] placeholder-[#666] outline-none transition-colors focus:border-[#4a4a4a]"
                     />
                   </div>
 

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getManifest, deleteManifest, updateManifest } from '../../../../lib/manifest-store';
+import { getManifest, getManifestVersions, deleteManifest, updateManifest } from '../../../../lib/manifest-store';
 import { parseBlobPath } from '../../../../lib/shelby';
 import { getRowIndexLineCount } from '../../../../lib/row-index-store';
 import { verifyPublisherSignature } from '../../../../lib/wallet-auth';
@@ -17,7 +17,7 @@ export async function GET(_request: Request, { params }: Params) {
   }
   const parsed = parseBlobPath(manifest.blobPath);
   const totalLines = parsed?.account ? getRowIndexLineCount(parsed.account, parsed.name) : undefined;
-  return NextResponse.json({ manifest, hasRowIndex: totalLines !== undefined, totalLines });
+  return NextResponse.json({ manifest, versions: getManifestVersions(id), hasRowIndex: totalLines !== undefined, totalLines });
 }
 
 export async function DELETE(request: Request, { params }: Params) {
@@ -79,9 +79,10 @@ export async function PUT(request: Request, { params }: Params) {
     priceShelbyUSD?: unknown;
     license?: unknown;
     format?: unknown;
+    changelog?: unknown;
   };
 
-  // Guard: hanya publisher yang bisa edit — dibuktikan dengan wallet signature.
+  // Guard: only the publisher can create a new immutable version.
   if (manifest.publisherAddress) {
     const verified = verifyPublisherSignature({
       expectedAddress: manifest.publisherAddress,
@@ -99,13 +100,14 @@ export async function PUT(request: Request, { params }: Params) {
     }
   }
 
-  const updates: { description?: string; priceShelbyUSD?: number; license?: string; format?: string } = {};
+  const updates: { description?: string; priceShelbyUSD?: number; license?: string; format?: string; changelog?: string } = {};
   if (typeof b.description === 'string') updates.description = b.description.trim();
   if (typeof b.priceShelbyUSD === 'number' && Number.isFinite(b.priceShelbyUSD)) {
     updates.priceShelbyUSD = Math.max(0, Math.round(b.priceShelbyUSD * 100) / 100);
   }
   if (typeof b.license === 'string') updates.license = b.license.trim();
   if (typeof b.format === 'string') updates.format = b.format.trim();
+  if (typeof b.changelog === 'string') updates.changelog = b.changelog.trim();
 
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: 'Nothing to update.' }, { status: 400 });

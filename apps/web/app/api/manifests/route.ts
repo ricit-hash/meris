@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { listManifests, createManifest, type ManifestCategory } from '../../../lib/manifest-store';
+import { listLatestManifests, createManifest, type ManifestCategory } from '../../../lib/manifest-store';
 import { parseBlobPath } from '../../../lib/shelby';
 import { recoverPublisherAddress } from '../../../lib/wallet-auth';
 import { checkRateLimit } from '../../../lib/rate-limit';
@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const publisher = url.searchParams.get('publisher')?.trim().toLowerCase() ?? '';
-  const manifests = listManifests()
+  const manifests = listLatestManifests()
     .filter((m) => !publisher || (m.publisher ?? '').trim().toLowerCase() === publisher)
     .map((m) => {
       const parsed = parseBlobPath(m.blobPath);

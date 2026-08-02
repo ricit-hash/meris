@@ -32,6 +32,7 @@ export default function DatasetDetailView({ id }: { id: string }) {
   const [votes, setVotes] = useState(0);
   const [downloaded, setDownloaded] = useState(0);
   const [related, setRelated] = useState<CatalogListing[]>([]);
+  const [versions, setVersions] = useState<Manifest[]>([]);
 
   const sample: (SampleDataset & { isMine: false }) | undefined = useMemo(
     () => (getSampleDataset(id) ? { ...getSampleDataset(id)!, isMine: false } : undefined),
@@ -57,12 +58,13 @@ export default function DatasetDetailView({ id }: { id: string }) {
             setLoaded(true);
             return;
           }
-          const data = (await res.json()) as { manifest?: Manifest; hasRowIndex?: boolean; totalLines?: number };
+          const data = (await res.json()) as { manifest?: Manifest; versions?: Manifest[]; hasRowIndex?: boolean; totalLines?: number };
           if (cancelled || !data.manifest) {
             setLoaded(true);
             return;
           }
           const m = data.manifest;
+          setVersions(data.versions ?? [m]);
           setRowIndexed(data.hasRowIndex === true);
           setTotalLines(data.totalLines);
           setDraft({
@@ -328,12 +330,30 @@ export default function DatasetDetailView({ id }: { id: string }) {
               ['Overview', '#overview'],
               ['Preview', '#preview'],
               ['Files', '#files'],
+              ['Versions', '#versions'],
               ['Access', '#access'],
               ['Discussion', '#discussion'],
             ].map(([label, href]) => (
               <a key={href} href={href} className="shrink-0 no-underline transition-colors hover:text-white">{label}</a>
             ))}
           </nav>
+
+          {versions.length > 0 ? (
+            <section id="versions" className="mt-6 rounded-[14px] border border-[#303030] bg-[#171717] p-4">
+              <div className="flex items-center justify-between">
+                <p className="ref-label">VERSIONS</p>
+                <p className="text-[10px] uppercase tracking-[0.1em] text-[#666]">{versions.length} immutable</p>
+              </div>
+              <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+                {versions.map((version) => (
+                  <Link key={version.id} href={`/catalog/${version.id}`} className={`min-w-[10rem] rounded-[10px] border px-3 py-3 no-underline ${version.id === listing?.id ? 'border-[#777] bg-[#222]' : 'border-[#303030] bg-[#111] hover:border-[#555]'}`}>
+                    <span className="text-[12px] text-[#e5e5e5]">v{version.version}{version.id === versions[0]?.id ? ' · current' : ''}</span>
+                    <span className="mt-1 block truncate text-[10px] text-[#777]">{version.changelog || 'Original publication'}</span>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          ) : null}
 
           <div id="overview" className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1.5fr)_minmax(19rem,0.7fr)]">
             <div>

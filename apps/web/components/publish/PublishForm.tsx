@@ -74,6 +74,9 @@ export default function PublishForm({ address, username }: Props) {
           sigPrefix?: string;
           fullMessageLength?: number;
           fullMessagePrefix?: string;
+          fullMessageSuffix?: string;
+          publicKeyLength?: number;
+          publicKeyPrefix?: string;
         };
       };
       if (res.ok && data.ok && data.blobPath) {
@@ -89,7 +92,7 @@ export default function PublishForm({ address, username }: Props) {
       } else {
         setVerify('fail');
         const diagnostic = data.sigInfo
-          ? ` [sig ${data.sigInfo.sigLength ?? '?'}:${data.sigInfo.sigPrefix ?? '?'} · msg ${data.sigInfo.fullMessageLength ?? '?'}:${data.sigInfo.fullMessagePrefix ?? '?'}]`
+          ? ` [sig ${data.sigInfo.sigLength ?? '?'}:${data.sigInfo.sigPrefix ?? '?'} · key ${data.sigInfo.publicKeyLength ?? '?'}:${data.sigInfo.publicKeyPrefix ?? '?'} · msg ${data.sigInfo.fullMessageLength ?? '?'}:${data.sigInfo.fullMessagePrefix ?? '?'}…${data.sigInfo.fullMessageSuffix ?? '?'}]`
           : '';
         setVerifyMsg(`${data.error ?? 'Upload failed.'}${diagnostic}`);
       }

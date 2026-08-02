@@ -35,6 +35,8 @@ type Props = {
   rowIndexed?: boolean;
   /** Lines counted by the server index; caps the request when the declared records exceed them. */
   totalLines?: number;
+  datasetName?: string;
+  license?: string;
 };
 
 export default function RangeRequest({
@@ -46,6 +48,8 @@ export default function RangeRequest({
   manifestId,
   rowIndexed = false,
   totalLines,
+  datasetName,
+  license,
 }: Props) {
   const router = useRouter();
   const [count, setCount] = useState(() => String(Math.max(1, Math.round(records * 0.1))));
@@ -337,6 +341,20 @@ export default function RangeRequest({
               </p>
             </div>
           ) : null}
+
+          <div className="mt-3 rounded-[12px] border border-[#303030] bg-[#111] px-4 py-4">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] uppercase tracking-[0.1em] text-[#666]">Order summary</p>
+              <p className="text-[11px] text-[#777]">Before wallet approval</p>
+            </div>
+            <div className="mt-3 space-y-2 text-[12px]">
+              <div className="flex justify-between gap-4"><span className="text-[#777]">Dataset</span><span className="max-w-[22ch] truncate text-right text-[#c0c0c0]">{datasetName ?? 'Selected dataset'}</span></div>
+              <div className="flex justify-between gap-4"><span className="text-[#777]">Records</span><span className="tabular-nums text-[#c0c0c0]">{fmt.format(wanted)} · {rowIndexed ? 'exact' : 'approx.'}</span></div>
+              <div className="flex justify-between gap-4"><span className="text-[#777]">Estimated delivery</span><span className="tabular-nums text-[#c0c0c0]">{formatBytes(bytes)}</span></div>
+              <div className="flex justify-between gap-4"><span className="text-[#777]">License</span><span className="max-w-[22ch] truncate text-right text-[#c0c0c0]">{license ?? 'Not specified'}</span></div>
+              <div className="flex justify-between gap-4 border-t border-[#262626] pt-2"><span className="text-[#999]">Total</span><span className="font-medium tabular-nums text-[#ededed]">{free ? 'Free' : formatShelbyPrice(slicePrice)}</span></div>
+            </div>
+          </div>
 
           <button
             type="button"

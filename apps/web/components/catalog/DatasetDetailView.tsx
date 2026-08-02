@@ -10,6 +10,7 @@ import { getSampleDataset, formatShelbyPrice, type SampleDataset } from './sampl
 import { getDatasets, draftToListing, type CatalogListing } from '../../lib/datasets';
 import { getProfile } from '../../lib/profile';
 import type { Manifest } from '../../lib/manifest-store';
+import { inferColumnSchema } from '../../lib/dataset-schema';
 
 // Lazy-loaded: interactive buyer panel, split into its own chunk.
 const RangeRequest = dynamic(() => import('./RangeRequest'), { ssr: true });
@@ -102,6 +103,7 @@ export default function DatasetDetailView({ id }: { id: string }) {
   }, [id]);
 
   const listing = sample ?? (loaded ? draft : null);
+  const schema = useMemo(() => (preview ? inferColumnSchema(preview.columns, preview.rows) : []), [preview]);
 
   // Data preview: read the first bytes of the blob and render the CSV head.
   // This is the "inspect before you pay" promise — a tiny range, not the file.
@@ -321,7 +323,19 @@ export default function DatasetDetailView({ id }: { id: string }) {
             </div>
           </div>
 
-          <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1.5fr)_minmax(19rem,0.7fr)]">
+          <nav aria-label="Dataset sections" className="mt-8 flex gap-5 overflow-x-auto border-y border-[#262626] py-3 text-[11px] uppercase tracking-[0.08em] text-[#777]">
+            {[
+              ['Overview', '#overview'],
+              ['Preview', '#preview'],
+              ['Files', '#files'],
+              ['Access', '#access'],
+              ['Discussion', '#discussion'],
+            ].map(([label, href]) => (
+              <a key={href} href={href} className="shrink-0 no-underline transition-colors hover:text-white">{label}</a>
+            ))}
+          </nav>
+
+          <div id="overview" className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1.5fr)_minmax(19rem,0.7fr)]">
             <div>
               <p className="ref-label">DATASET MANIFEST</p>
               <h1 className="mt-4 text-[clamp(2rem,4vw,3.6rem)] font-light leading-[0.98] tracking-[-0.05em] text-[#ededed]">
@@ -341,7 +355,7 @@ export default function DatasetDetailView({ id }: { id: string }) {
                 ))}
               </div>
 
-              <div className="mt-6 rounded-[14px] border border-[#303030] bg-[#171717] p-4">
+              <div id="files" className="mt-6 rounded-[14px] border border-[#303030] bg-[#171717] p-4">
                 <p className="text-[10px] uppercase tracking-[0.1em] text-[#666]">Shelby blob</p>
                 <p className="mt-2 break-all font-mono text-[13px] leading-6 text-[#999]">{listing.blobPath}</p>
                 {('uploadedAt' in listing && listing.uploadedAt) ? (
@@ -409,7 +423,7 @@ export default function DatasetDetailView({ id }: { id: string }) {
               </div>
 
               {previewState !== 'idle' && listing.blobPath.startsWith('shelby://') ? (
-                <div className="mt-8 overflow-hidden rounded-[14px] border border-[#303030] bg-[#171717]">
+                <div id="preview" className="mt-8 overflow-hidden rounded-[14px] border border-[#303030] bg-[#171717]">
                   <div className="flex items-center justify-between border-b border-[#262626] px-4 py-3">
                     <p className="ref-label">DATA PREVIEW</p>
                     <p className="text-[10px] uppercase tracking-[0.1em] text-[#666]">
@@ -421,7 +435,8 @@ export default function DatasetDetailView({ id }: { id: string }) {
                     </p>
                   </div>
                   {previewState === 'ok' && preview ? (
-                    <div className="max-h-[20rem] overflow-auto">
+                    <>
+                      <div className="max-h-[20rem] overflow-auto">
                       <table className="w-full border-collapse text-left text-[12px]">
                         <thead className="sticky top-0 bg-[#1d1d1d]">
                           <tr>
@@ -445,6 +460,23 @@ export default function DatasetDetailView({ id }: { id: string }) {
                         </tbody>
                       </table>
                     </div>
+                    {schema.length > 0 ? (
+                      <div className="border-t border-[#262626] px-4 py-4">
+                        <div className="flex items-center justify-between">
+                          <p className="ref-label">SCHEMA FROM PREVIEW</p>
+                          <p className="text-[10px] uppercase tracking-[0.1em] text-[#666]">{schema.length} columns</p>
+                        </div>
+                        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                          {schema.map((column) => (
+                            <div key={column.name} className="flex items-center justify-between gap-3 rounded-[10px] border border-[#262626] bg-[#111] px-3 py-2">
+                              <span className="min-w-0 truncate font-mono text-[11px] text-[#c0c0c0]">{column.name}</span>
+                              <span className="shrink-0 text-[10px] uppercase tracking-[0.08em] text-[#777]">{column.type} · {column.missing} missing</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+                  </>
                   ) : previewState === 'fail' ? (
                     <p className="px-4 py-6 text-[12px] leading-5 text-[#666]">
                       Could not read the blob head — the file may be binary or not yet uploaded.
@@ -493,7 +525,7 @@ export default function DatasetDetailView({ id }: { id: string }) {
               ) : null}
             </div>
 
-            <div className="lg:pt-2">
+            <div id="access" className="lg:pt-2">
               <RangeRequest
                 size={listing.size}
                 records={listing.records}
@@ -503,6 +535,8 @@ export default function DatasetDetailView({ id }: { id: string }) {
                 manifestId={listing.id.startsWith('m-') ? listing.id : undefined}
                 rowIndexed={rowIndexed}
                 totalLines={totalLines}
+                datasetName={listing.title}
+                license={listing.license}
               />
             </div>
           </div>
@@ -521,7 +555,9 @@ export default function DatasetDetailView({ id }: { id: string }) {
           ) : null}
 
           {listing.id.startsWith('m-') ? (
-            <DiscussionSection manifestId={listing.id} />
+            <div id="discussion">
+              <DiscussionSection manifestId={listing.id} />
+            </div>
           ) : null}
         </section>
       </main>

@@ -14,6 +14,10 @@ import {
   UserResponseStatus,
   type AptosWallet,
 } from '@aptos-labs/wallet-standard';
+import {
+  Ed25519PublicKey,
+  Ed25519Signature,
+} from '@aptos-labs/ts-sdk';
 import type { InputGenerateTransactionPayloadData } from '@aptos-labs/ts-sdk';
 import type { WalletAccount } from './types';
 
@@ -351,6 +355,25 @@ function normalizeSignature(sig: string | { toString(): string } | { toUint8Arra
     throw new Error('Wallet returned an unsupported signature shape');
   }
   return stringified;
+}
+
+export function verifySignedMessageLocally(
+  publicKeyHex: string,
+  signature: string,
+  fullMessage: string,
+): boolean {
+  const hex = signature.startsWith('0x') ? signature.slice(2) : signature;
+  if (!/^[0-9a-fA-F]{128}$/.test(hex)) return false;
+  try {
+    const publicKey = new Ed25519PublicKey(publicKeyHex);
+    const parsed = new Ed25519Signature(`0x${hex}`);
+    return publicKey.verifySignature({
+      message: new TextEncoder().encode(fullMessage),
+      signature: parsed,
+    });
+  } catch {
+    return false;
+  }
 }
 
 export async function signMessage(

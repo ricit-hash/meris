@@ -43,7 +43,7 @@ export default function PublishForm({ address, username }: Props) {
     setVerify('checking');
     setVerifyMsg('');
     try {
-      const { getConnectedWallet, signMessageDetailed } = await import('../../lib/wallet/aptos-client');
+      const { getConnectedWallet, signMessageDetailed, verifySignedMessageLocally } = await import('../../lib/wallet/aptos-client');
       const wallet = await getConnectedWallet();
       if (!wallet?.address) {
         router.push('/gate');
@@ -55,6 +55,9 @@ export default function PublishForm({ address, username }: Props) {
       // gate who gets to spend its Shelby gas on this blob.
       const expiry = Date.now() + 120_000;
       const signed = await signMessageDetailed(`meris:upload:${blobName}:${expiry}`);
+      if (!verifySignedMessageLocally(wallet.publicKey, signed.signature, signed.fullMessage)) {
+        throw new Error('Wallet returned a signature that does not verify against its fullMessage. Reconnect Petra and try again.');
+      }
       const fd = new FormData();
       fd.append('file', file);
       fd.append('blobName', blobName);
@@ -97,9 +100,9 @@ export default function PublishForm({ address, username }: Props) {
           : '';
         setVerifyMsg(`${data.error ?? 'Upload failed.'}${diagnostic}`);
       }
-    } catch {
+    } catch (err) {
       setVerify('fail');
-      setVerifyMsg('Upload failed — check the server.');
+      setVerifyMsg(err instanceof Error ? err.message : 'Upload failed — check the server.');
     } finally {
       setUploading(false);
     }

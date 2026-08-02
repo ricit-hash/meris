@@ -7,6 +7,7 @@
  * The server derives the account address from the public key and verifies the
  * Ed25519 signature over the full message.
  */
+import { createPublicKey, verify as verifyEd25519 } from 'node:crypto';
 import {
   AccountAddress,
   AuthenticationKey,
@@ -70,6 +71,38 @@ function parseEd25519Signature(signature: string): Ed25519Signature | null {
   return null;
 }
 
+function rawSignatureBytes(signature: string): Buffer | null {
+  const hex = signature.startsWith('0x') ? signature.slice(2) : signature;
+  if (/^[0-9a-fA-F]{128}$/.test(hex)) return Buffer.from(hex, 'hex');
+  try {
+    const bytes = Buffer.from(signature, 'base64');
+    if (bytes.length === 64) return bytes;
+    if (bytes.length === 65 && bytes[0] === 0) return bytes.subarray(1);
+    if (bytes.length === 99 && (bytes[0] === 4 || bytes[0] === 2) && bytes[1] === 0 && bytes[34] === 0) {
+      return bytes.subarray(35);
+    }
+  } catch {
+    // unsupported encoding
+  }
+  return null;
+}
+
+function verifyWithNodeCrypto(publicKeyHex: string, signature: string, message: string): boolean {
+  const rawKey = publicKeyHex.replace(/^0x/, '');
+  const rawSignature = rawSignatureBytes(signature);
+  if (!/^[0-9a-fA-F]{64}$/.test(rawKey) || !rawSignature) return false;
+  try {
+    const spki = Buffer.concat([
+      Buffer.from('302a300506032b6570032100', 'hex'),
+      Buffer.from(rawKey, 'hex'),
+    ]);
+    const key = createPublicKey({ key: spki, format: 'der', type: 'spki' });
+    return verifyEd25519(null, Buffer.from(message, 'utf8'), key, rawSignature);
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Verify the signature payload and recover the signer address. `address` is
  * set only when everything checks out.
@@ -122,7 +155,8 @@ function verifySignature(params: SignatureParams): { ok: boolean; reason?: strin
   const wrapped = params.fullMessage.match(/^APTOS\nmessage: ([\s\S]*)\nnonce: [^\n]*$/);
   if (wrapped?.[1]) messageCandidates.push(wrapped[1]);
   const verifiedMessage = messageCandidates.some((candidate) =>
-    publicKey.verifySignature({ message: new TextEncoder().encode(candidate), signature }),
+    publicKey.verifySignature({ message: new TextEncoder().encode(candidate), signature })
+    || verifyWithNodeCrypto(params.publicKeyHex, params.signature, candidate),
   );
   if (!verifiedMessage) {
     return {

@@ -78,7 +78,10 @@ export async function POST(request: Request) {
   });
   if (!verified.ok || !verified.address) {
     return NextResponse.json(
-      { error: `Upload requires a wallet signature (${verified.reason ?? 'invalid signature'}).` },
+      {
+        error: `Upload requires a wallet signature (${verified.reason ?? 'invalid signature'}).`,
+        ...(verified.sigInfo ? { sigInfo: verified.sigInfo } : {}),
+      },
       { status: 401 },
     );
   }

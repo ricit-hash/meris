@@ -16,7 +16,7 @@ import {
 
 export type OwnershipAction = 'delist' | 'edit' | 'upload' | 'publish' | 'vote' | 'profile' | 'discussion';
 
-export type VerifyResult = { ok: boolean; reason?: string };
+export type VerifyResult = { ok: boolean; reason?: string; sigInfo?: Record<string, string | number> };
 
 export type SignatureParams = {
   action: OwnershipAction;
@@ -38,18 +38,34 @@ function parseEd25519Signature(signature: string): Ed25519Signature | null {
     try {
       return new Ed25519Signature(`0x${hex}`);
     } catch {
-      // fall through to BCS parse
+      // fall through
     }
   }
-  // BCS-serialized AccountSignature in base64 (wallet-standard payloads):
-  // u8 variant tag (0 = ed25519) followed by the 64-byte raw signature.
+  // Hex-prefixed BCS AccountSignature (ed25519 variant): "00" + 64 bytes.
+  if (/^[0-9a-fA-F]{130}$/.test(hex) && hex.startsWith('00')) {
+    try {
+      return new Ed25519Signature(`0x${hex.slice(2)}`);
+    } catch {
+      // fall through
+    }
+  }
+  // Base64 payloads — try the common shapes:
+  //  - 64 bytes: raw signature
+  //  - 65 bytes, tag 0: BCS AccountSignature (ed25519)
+  //  - 99 bytes, tags [4|2]/0/0: BCS SingleKeySignature over ed25519
   try {
     const bytes = Buffer.from(signature, 'base64');
+    if (bytes.length === 64) {
+      return new Ed25519Signature(`0x${bytes.toString('hex')}`);
+    }
     if (bytes.length === 65 && bytes[0] === 0) {
       return new Ed25519Signature(`0x${bytes.subarray(1, 65).toString('hex')}`);
     }
+    if (bytes.length === 99 && (bytes[0] === 4 || bytes[0] === 2) && bytes[1] === 0 && bytes[34] === 0) {
+      return new Ed25519Signature(`0x${bytes.subarray(35, 99).toString('hex')}`);
+    }
   } catch {
-    // not BCS — return null below
+    // not a base64 payload
   }
   return null;
 }
@@ -58,7 +74,7 @@ function parseEd25519Signature(signature: string): Ed25519Signature | null {
  * Verify the signature payload and recover the signer address. `address` is
  * set only when everything checks out.
  */
-function verifySignature(params: SignatureParams): { ok: boolean; reason?: string; address?: string } {
+function verifySignature(params: SignatureParams): { ok: boolean; reason?: string; address?: string; sigInfo?: Record<string, string | number> } {
   const now = params.now ?? Date.now();
 
   if (!ALLOWED_ACTIONS.includes(params.action)) {
@@ -102,7 +118,16 @@ function verifySignature(params: SignatureParams): { ok: boolean; reason?: strin
 
   const message = new TextEncoder().encode(params.fullMessage);
   if (!publicKey.verifySignature({ message, signature })) {
-    return { ok: false, reason: 'signature verification failed' };
+    return {
+      ok: false,
+      reason: 'signature verification failed',
+      sigInfo: {
+        sigLength: params.signature.length,
+        sigPrefix: params.signature.slice(0, 16),
+        fullMessageLength: params.fullMessage.length,
+        fullMessagePrefix: params.fullMessage.slice(0, 60).replace(/\n/g, '\\n'),
+      },
+    };
   }
 
   return { ok: true, address: derived };
@@ -130,7 +155,7 @@ export function verifyPublisherSignature(
  */
 export function recoverPublisherAddress(
   params: SignatureParams,
-): { ok: boolean; reason?: string; address?: string } {
+): { ok: boolean; reason?: string; address?: string; sigInfo?: Record<string, string | number> } {
   return verifySignature(params);
 }
 

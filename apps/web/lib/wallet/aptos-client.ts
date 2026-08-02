@@ -284,14 +284,18 @@ export async function signMessageDetailed(
     throw new Error('Sign rejected');
   }
   const out = res.args as {
-    signature?: { toString(): string } | string;
+    signature?: { toString(): string } | string | { toUint8Array?: () => Uint8Array; data?: unknown };
     fullMessage?: string;
     nonce?: string;
     message?: string;
   };
   const sig = out.signature;
   if (sig == null) throw new Error('Wallet returned no signature');
-  const signature = typeof sig === 'string' ? sig : sig?.toString?.() || String(sig);
+
+  // Normalize the wallet's signature to a canonical raw 64-byte hex string.
+  // Wallets return different shapes (hex string, Uint8Array, BCS object) —
+  // the server accepts hex/base64 forms, but normalizing here is deterministic.
+  const signature = normalizeSignature(sig);
 
   // Wallets should return fullMessage (APTOS\nmessage:...\nnonce:...)
   let fullMessage = out.fullMessage || '';
@@ -306,6 +310,39 @@ export async function signMessageDetailed(
     nonce: out.nonce || nonce,
     message: out.message || message,
   };
+}
+
+function bytesToHex(bytes: Uint8Array): string {
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+/** Extract raw signature bytes from any shape a wallet-standard signer returns. */
+function toBytes(value: unknown): Uint8Array | null {
+  const v = value as { toUint8Array?: () => Uint8Array; data?: unknown; signature?: unknown };
+  if (typeof v?.toUint8Array === 'function') return v.toUint8Array();
+  if (ArrayBuffer.isView(value)) {
+    return new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
+  }
+  if (ArrayBuffer.isView(v?.data)) {
+    const d = v.data as Uint8Array;
+    return new Uint8Array(d.buffer, d.byteOffset, d.byteLength);
+  }
+  if (ArrayBuffer.isView(v?.signature)) {
+    const s = v.signature as Uint8Array;
+    return new Uint8Array(s.buffer, s.byteOffset, s.byteLength);
+  }
+  return null;
+}
+
+function normalizeSignature(sig: string | { toString(): string } | { toUint8Array?: () => Uint8Array; data?: unknown }): string {
+  if (typeof sig === 'string') return sig;
+  const bytes = toBytes(sig);
+  if (bytes) return bytesToHex(bytes);
+  return typeof (sig as { toString(): string }).toString === 'function'
+    ? (sig as { toString(): string }).toString()
+    : String(sig);
 }
 
 export async function signMessage(

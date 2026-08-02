@@ -11,6 +11,12 @@ export type LedgerEntry = {
   amountShelbyUSD: number;
   hash: string;
   kind: 'range' | 'file';
+  /** Manifest title captured at purchase time for stable buyer history. */
+  manifestName?: string;
+  /** Number of records purchased for a range request. */
+  records?: number;
+  /** Existing or newly confirmed micropayment channel. */
+  channelId?: string;
   /** Requested byte window (range-delivery only). */
   rangeBytes?: number;
   createdAt: number;

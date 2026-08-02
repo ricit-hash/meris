@@ -13,6 +13,9 @@ type LedgerEntry = {
   amountShelbyUSD: number;
   hash: string;
   kind: 'range' | 'file';
+  manifestName?: string;
+  records?: number;
+  channelId?: string;
   rangeBytes?: number;
   createdAt: number;
 };
@@ -65,6 +68,8 @@ export default function PurchasesView({ address }: { address: string }) {
           rangeBytes: entry.kind === 'range' && entry.rangeBytes ? entry.rangeBytes : undefined,
           manifestId: entry.manifestId,
           paymentHash: entry.hash || undefined,
+          channelId: entry.channelId || undefined,
+          records: entry.records || undefined,
           buyer: address,
         }),
       });
@@ -143,9 +148,9 @@ export default function PurchasesView({ address }: { address: string }) {
                       return (
                         <tr key={entry.id} className="border-b border-[#262626] last:border-b-0">
                           <td className="px-5 py-4">
-                            <p className="font-mono text-[13px] text-[#e5e5e5]">{entry.blobPath.split('/').pop()}</p>
+                            <p className="text-[13px] text-[#e5e5e5]">{entry.manifestName ?? entry.blobPath.split('/').pop()}</p>
                             <p className="mt-0.5 text-[10px] text-[#666]">
-                              {entry.kind === 'range' ? 'Range-ready' : 'Full file'}
+                              {entry.kind === 'range' ? `${entry.records ? `${entry.records.toLocaleString()} records · ` : ''}Range slice` : 'Full file'}
                             </p>
                           </td>
                           <td className="hidden px-5 py-4 text-[12px] tabular-nums text-[#a7a7a7] sm:table-cell">

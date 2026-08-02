@@ -34,6 +34,7 @@ export async function POST(request: Request) {
     manifestId?: unknown;
     createHash?: unknown;
     pendingKeyId?: unknown;
+    channelId?: unknown;
     buyer?: unknown;
   };
   if (typeof b.blobPath !== 'string') {
@@ -76,6 +77,7 @@ export async function POST(request: Request) {
   // Paid listing: wajib manifest + channel create yang sukses on-chain.
   let paidManifest: ReturnType<typeof getManifest> | null = null;
   let purchasePrice = 0;
+  let settledChannelId: string | undefined;
   if (typeof b.manifestId === 'string' && b.manifestId.startsWith('m-')) {
     const manifest = getManifest(b.manifestId);
     if (!manifest) {
@@ -128,6 +130,7 @@ export async function POST(request: Request) {
               { status: 402 },
             );
           }
+          settledChannelId = confirmed.channelId;
         } catch (err) {
           const message = err instanceof Error ? err.message : 'Unknown';
           return NextResponse.json({ error: `Channel confirmation failed: ${message}` }, { status: 502 });
@@ -140,13 +143,14 @@ export async function POST(request: Request) {
           receiver: AccountAddress.fromString(manifest.publisherAddress),
         });
         const min = BigInt(Math.round(purchasePrice * 10 ** 8));
-        const funded = channels.some((c) => c.balance >= min);
+        const funded = channels.find((c) => c.balance >= min);
         if (!funded) {
           return NextResponse.json(
             { error: 'No funded channel for this purchase — request a new quote.' },
             { status: 402 },
           );
         }
+        settledChannelId = funded.paymentChannelId.toString();
       }
     }
   }
@@ -161,6 +165,9 @@ export async function POST(request: Request) {
       amountShelbyUSD: purchasePrice,
       hash: typeof b.createHash === 'string' ? b.createHash : '',
       kind: paidManifest.kind,
+      manifestName: paidManifest.name,
+      records,
+      channelId: settledChannelId ?? (typeof b.channelId === 'string' ? b.channelId : undefined),
       rangeBytes: typeof b.rangeBytes === 'number' && Number.isFinite(b.rangeBytes) ? Math.max(0, Math.floor(b.rangeBytes)) : undefined,
     });
   }

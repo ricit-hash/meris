@@ -1,7 +1,8 @@
 // Server-side store for micropayment WithdrawApproval records. Created when a
 // channel is confirmed; consumed when the publisher withdraws.
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import { atomicWriteJson } from './atomic-json';
 
 export type MicropaymentApproval = {
   id: string;
@@ -30,9 +31,7 @@ function readAll(): MicropaymentApproval[] {
 }
 
 function writeAll(list: MicropaymentApproval[]): void {
-  const p = storePath();
-  mkdirSync(path.dirname(p), { recursive: true });
-  writeFileSync(p, JSON.stringify(list, null, 2));
+  atomicWriteJson(storePath(), list);
 }
 
 export function storeMicropaymentApproval(input: Omit<MicropaymentApproval, 'id' | 'createdAt'>): MicropaymentApproval {

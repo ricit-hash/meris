@@ -4,8 +4,9 @@
 // and the private key is held here so the server can produce the WithdrawApproval
 // signature the receiver needs to withdraw. Pending entries are cleared once
 // the channel is confirmed on-chain.
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import { atomicWriteJson } from './atomic-json';
 
 export type PendingChannelKey = {
   /** sender (buyer) address */
@@ -40,9 +41,7 @@ function readAll(): FileShape {
 }
 
 function writeAll(shape: FileShape): void {
-  const p = storePath();
-  mkdirSync(path.dirname(p), { recursive: true });
-  writeFileSync(p, JSON.stringify(shape, null, 2));
+  atomicWriteJson(storePath(), shape);
 }
 
 /** Key used while a channel is being created (before the tx confirms). */

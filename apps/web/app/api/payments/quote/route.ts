@@ -2,10 +2,14 @@ import { NextResponse } from 'next/server';
 import { getManifest } from '../../../../lib/manifest-store';
 import { parseBlobPath } from '../../../../lib/shelby';
 import { prepareChannelCreation, getMicropaymentClient } from '../../../../lib/payments';
+import { checkRateLimit } from '../../../../lib/rate-limit';
 import { AccountAddress } from '@aptos-labs/ts-sdk';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+const QUOTES_PER_ADDRESS = 60;
+const RATE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -37,6 +41,12 @@ export async function POST(request: Request) {
   }
   if (typeof b.buyer !== 'string' || !b.buyer.startsWith('0x')) {
     return NextResponse.json({ error: 'buyer wallet address is required.' }, { status: 400 });
+  }
+  if (!checkRateLimit(`quote:${b.buyer.toLowerCase()}`, QUOTES_PER_ADDRESS, RATE_WINDOW_MS)) {
+    return NextResponse.json(
+      { error: `Too many quotes — try again later (limit ${QUOTES_PER_ADDRESS}/hour).` },
+      { status: 429 },
+    );
   }
   if (!manifest.publisherAddress) {
     return NextResponse.json(

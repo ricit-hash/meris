@@ -6,9 +6,13 @@ import { getManifest } from '../../../lib/manifest-store';
 import { addLedgerEntry } from '../../../lib/ledger';
 import { resolveEndOffset, parseByteSize, declaredSliceEndBytes } from '../../../lib/row-index';
 import { getRowIndex } from '../../../lib/row-index-store';
+import { checkRateLimit } from '../../../lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+const REQUESTS_PER_ADDRESS = 30;
+const RATE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 
 const SIGN_TTL_MS = 5 * 60 * 1000; // 5 menit
 
@@ -57,6 +61,16 @@ export async function POST(request: Request) {
   });
   let end = resolved.end;
   let endExact = resolved.exact;
+
+  // Rate limit signed download requests per buyer wallet.
+  if (typeof b.buyer === 'string' && b.buyer.startsWith('0x')) {
+    if (!checkRateLimit(`requests:${b.buyer.toLowerCase()}`, REQUESTS_PER_ADDRESS, RATE_WINDOW_MS)) {
+      return NextResponse.json(
+        { error: `Too many download requests — try again later (limit ${REQUESTS_PER_ADDRESS}/hour).` },
+        { status: 429 },
+      );
+    }
+  }
 
   // Paid listing: wajib manifest + channel create yang sukses on-chain.
   let paidManifest: ReturnType<typeof getManifest> | null = null;

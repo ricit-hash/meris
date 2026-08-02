@@ -1,5 +1,6 @@
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import { atomicWriteJson } from './atomic-json';
 
 /**
  * Persistent row-index sidecar: blob path -> line offsets.
@@ -32,9 +33,7 @@ function readAll(): RowIndexStore {
 }
 
 function writeAll(store: RowIndexStore): void {
-  const p = storePath();
-  mkdirSync(path.dirname(p), { recursive: true });
-  writeFileSync(p, JSON.stringify(store, null, 2));
+  atomicWriteJson(storePath(), store);
 }
 
 export function rowIndexKey(account: string, name: string): string {

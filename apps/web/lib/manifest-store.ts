@@ -1,5 +1,6 @@
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import { atomicWriteJson } from './atomic-json';
 
 export type ManifestCategory = 'AI-ready' | 'Web3' | 'Research' | 'Agent';
 
@@ -51,9 +52,7 @@ function readAll(): Manifest[] {
 }
 
 function writeAll(list: Manifest[]): void {
-  const p = storePath();
-  mkdirSync(path.dirname(p), { recursive: true });
-  writeFileSync(p, JSON.stringify(list, null, 2));
+  atomicWriteJson(storePath(), list);
 }
 
 export function listManifests(): Manifest[] {

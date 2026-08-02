@@ -95,12 +95,25 @@ export default function DatasetDetailView({ id }: { id: string }) {
     setDelistState('busy');
     setDelistError('');
     try {
-      const { getConnectedWallet } = await import('../../lib/wallet/aptos-client');
+      const { getConnectedWallet, signMessageDetailed } = await import('../../lib/wallet/aptos-client');
       const wallet = await getConnectedWallet();
+      if (!wallet?.address) {
+        router.push('/gate');
+        return;
+      }
+      // Ownership proof: wallet signs meris:delist:{id}:{expiry}; the server
+      // derives the address from the public key and verifies the signature.
+      const expiry = Date.now() + 120_000;
+      const signed = await signMessageDetailed(`meris:delist:${listing.id}:${expiry}`);
       const res = await fetch(`/api/manifests/${listing.id}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requester: wallet?.address ?? '' }),
+        body: JSON.stringify({
+          requester: wallet.address,
+          publicKeyHex: wallet.publicKey,
+          signature: signed.signature,
+          fullMessage: signed.fullMessage,
+        }),
       });
       if (!res.ok) {
         const data = (await res.json()) as { error?: string };

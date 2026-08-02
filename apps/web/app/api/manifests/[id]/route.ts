@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getManifest, deleteManifest, updateManifest } from '../../../../lib/manifest-store';
 import { parseBlobPath } from '../../../../lib/shelby';
 import { getRowIndexLineCount } from '../../../../lib/row-index-store';
+import { verifyPublisherSignature } from '../../../../lib/wallet-auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -26,17 +27,30 @@ export async function DELETE(request: Request, { params }: Params) {
     return NextResponse.json({ error: 'Manifest not found.' }, { status: 404 });
   }
 
-  let requester = '';
+  let body: { requester?: unknown; publicKeyHex?: unknown; signature?: unknown; fullMessage?: unknown } = {};
   try {
-    const body = (await request.json()) as { requester?: unknown };
-    if (typeof body.requester === 'string') requester = body.requester;
+    body = (await request.json()) as typeof body;
   } catch {
     // body optional — legacy manifests without publisherAddress may delete without requester
   }
 
-  // Guard: manifest dengan publisherAddress wajib dihapus oleh pemiliknya.
-  if (manifest.publisherAddress && requester !== manifest.publisherAddress) {
-    return NextResponse.json({ error: 'Only the publisher can delist this listing.' }, { status: 403 });
+  // Guard: manifest dengan publisherAddress wajib dihapus oleh pemiliknya —
+  // dibuktikan dengan wallet signature, bukan klaim address dari client.
+  if (manifest.publisherAddress) {
+    const verified = verifyPublisherSignature({
+      expectedAddress: manifest.publisherAddress,
+      action: 'delist',
+      manifestId: id,
+      publicKeyHex: typeof body.publicKeyHex === 'string' ? body.publicKeyHex : '',
+      signature: typeof body.signature === 'string' ? body.signature : '',
+      fullMessage: typeof body.fullMessage === 'string' ? body.fullMessage : '',
+    });
+    if (!verified.ok) {
+      return NextResponse.json(
+        { error: `Only the publisher can delist this listing (${verified.reason ?? 'invalid signature'}).` },
+        { status: 403 },
+      );
+    }
   }
 
   deleteManifest(id);
@@ -58,15 +72,31 @@ export async function PUT(request: Request, { params }: Params) {
   }
   const b = body as {
     requester?: unknown;
+    publicKeyHex?: unknown;
+    signature?: unknown;
+    fullMessage?: unknown;
     description?: unknown;
     priceShelbyUSD?: unknown;
     license?: unknown;
     format?: unknown;
   };
 
-  // Guard: hanya publisher yang bisa edit.
-  if (manifest.publisherAddress && b.requester !== manifest.publisherAddress) {
-    return NextResponse.json({ error: 'Only the publisher can edit this listing.' }, { status: 403 });
+  // Guard: hanya publisher yang bisa edit — dibuktikan dengan wallet signature.
+  if (manifest.publisherAddress) {
+    const verified = verifyPublisherSignature({
+      expectedAddress: manifest.publisherAddress,
+      action: 'edit',
+      manifestId: id,
+      publicKeyHex: typeof b.publicKeyHex === 'string' ? b.publicKeyHex : '',
+      signature: typeof b.signature === 'string' ? b.signature : '',
+      fullMessage: typeof b.fullMessage === 'string' ? b.fullMessage : '',
+    });
+    if (!verified.ok) {
+      return NextResponse.json(
+        { error: `Only the publisher can edit this listing (${verified.reason ?? 'invalid signature'}).` },
+        { status: 403 },
+      );
+    }
   }
 
   const updates: { description?: string; priceShelbyUSD?: number; license?: string; format?: string } = {};

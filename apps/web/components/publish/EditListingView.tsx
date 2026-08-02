@@ -69,12 +69,25 @@ export default function EditListingView({ id, address }: { id: string; address: 
     setSaving(true);
     setError('');
     try {
+      const { getConnectedWallet, signMessageDetailed } = await import('../../lib/wallet/aptos-client');
+      const wallet = await getConnectedWallet();
+      if (!wallet?.address) {
+        router.push('/gate');
+        return;
+      }
       const priceNum = price.trim() === '' ? 0 : Number(price);
+      // Ownership proof: wallet signs meris:edit:{id}:{expiry}; the server
+      // derives the address from the public key and verifies the signature.
+      const expiry = Date.now() + 120_000;
+      const signed = await signMessageDetailed(`meris:edit:${id}:${expiry}`);
       const res = await fetch(`/api/manifests/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          requester: address,
+          requester: wallet.address,
+          publicKeyHex: wallet.publicKey,
+          signature: signed.signature,
+          fullMessage: signed.fullMessage,
           description: description.trim(),
           license: license.trim(),
           ...(Number.isFinite(priceNum) ? { priceShelbyUSD: priceNum } : {}),

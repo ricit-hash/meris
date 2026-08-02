@@ -79,3 +79,37 @@ export function looksLineIndexable(bytes: Uint8Array): boolean {
   }
   return hasNewline;
 }
+
+const SIZE_UNITS: Record<string, number> = {
+  B: 1,
+  KB: 1024,
+  MB: 1024 ** 2,
+  GB: 1024 ** 3,
+  TB: 1024 ** 4,
+};
+
+/** Parse a human file size ("86 MB", "500 B") to bytes. 0 when unparsable. */
+export function parseByteSize(size: string): number {
+  const match = size.trim().match(/([\d.]+)\s*(B|KB|MB|GB|TB)/i);
+  if (!match) return 0;
+  const n = Number(match[1]);
+  const mult = SIZE_UNITS[match[2].toUpperCase()] ?? 1;
+  if (!Number.isFinite(n)) return 0;
+  return Math.round(n * mult);
+}
+
+/**
+ * Inclusive HTTP Range end for `wantedRecords` of `totalRecords`, based on the
+ * publisher-declared blob size. Used to cap unindexed listings so a buyer can
+ * never request more bytes than the slice they paid for.
+ */
+export function declaredSliceEndBytes(
+  declaredSizeBytes: number,
+  wantedRecords: number,
+  totalRecords: number,
+): number {
+  if (declaredSizeBytes <= 0 || wantedRecords <= 0 || totalRecords <= 0) return 0;
+  const wanted = Math.min(wantedRecords, totalRecords);
+  const end = Math.round((declaredSizeBytes * wanted) / totalRecords) - 1;
+  return Math.max(0, Math.min(declaredSizeBytes - 1, end));
+}

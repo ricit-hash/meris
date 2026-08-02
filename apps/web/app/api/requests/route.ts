@@ -4,7 +4,7 @@ import { signStream } from '../../../lib/signed-url';
 import { verifyTransaction, confirmChannelAndBuildApproval, getMicropaymentClient } from '../../../lib/payments';
 import { getManifest } from '../../../lib/manifest-store';
 import { addLedgerEntry } from '../../../lib/ledger';
-import { resolveEndOffset } from '../../../lib/row-index';
+import { resolveEndOffset, parseByteSize, declaredSliceEndBytes } from '../../../lib/row-index';
 import { getRowIndex } from '../../../lib/row-index-store';
 
 export const runtime = 'nodejs';
@@ -55,8 +55,8 @@ export async function POST(request: Request) {
     records,
     end: endRaw,
   });
-  const end = resolved.end;
-  const endExact = resolved.exact;
+  let end = resolved.end;
+  let endExact = resolved.exact;
 
   // Paid listing: wajib manifest + channel create yang sukses on-chain.
   let paidManifest: ReturnType<typeof getManifest> | null = null;
@@ -143,6 +143,30 @@ export async function POST(request: Request) {
     });
   }
 
+  // Unindexed paid listings: cap the byte range at the declared slice so a
+  // buyer can never request more bytes than the records they paid for.
+  let endClamped = false;
+  if (
+    !endExact &&
+    records !== undefined &&
+    records > 0 &&
+    paidManifest &&
+    paidManifest.records > 0
+  ) {
+    const declared = parseByteSize(paidManifest.fileSize);
+    if (declared > 0) {
+      const cap = declaredSliceEndBytes(declared, records, paidManifest.records);
+      if (end === undefined || end > cap) endClamped = true;
+      end = end !== undefined ? Math.min(end, cap) : cap;
+      if (end <= start) {
+        return NextResponse.json(
+          { error: 'Requested range is outside the declared listing size.' },
+          { status: 400 },
+        );
+      }
+    }
+  }
+
   if (!isShelbyConfigured()) {
     return NextResponse.json(
       { error: 'Shelby is not configured. Add SHELBY_API_KEY to the server environment.' },
@@ -168,5 +192,5 @@ export async function POST(request: Request) {
   });
   if (end !== undefined) params.set('end', String(end));
 
-  return NextResponse.json({ url: `/api/blobs/stream?${params.toString()}`, endExact });
+  return NextResponse.json({ url: `/api/blobs/stream?${params.toString()}`, endExact, endClamped });
 }

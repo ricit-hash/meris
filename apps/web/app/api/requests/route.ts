@@ -7,6 +7,7 @@ import { addLedgerEntry } from '../../../lib/ledger';
 import { resolveEndOffset, parseByteSize, declaredSliceEndBytes } from '../../../lib/row-index';
 import { getRowIndex } from '../../../lib/row-index-store';
 import { checkRateLimit } from '../../../lib/rate-limit';
+import { calculateSlicePrice } from '../../../lib/purchase-quote';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -74,12 +75,19 @@ export async function POST(request: Request) {
 
   // Paid listing: wajib manifest + channel create yang sukses on-chain.
   let paidManifest: ReturnType<typeof getManifest> | null = null;
+  let purchasePrice = 0;
   if (typeof b.manifestId === 'string' && b.manifestId.startsWith('m-')) {
     const manifest = getManifest(b.manifestId);
     if (!manifest) {
       return NextResponse.json({ error: 'Manifest not found.' }, { status: 404 });
     }
     paidManifest = manifest;
+    purchasePrice = calculateSlicePrice({
+      priceShelbyUSD: manifest.priceShelbyUSD,
+      kind: manifest.kind,
+      records: records ?? manifest.records,
+      totalRecords: manifest.records,
+    });
     if (manifest.priceShelbyUSD > 0) {
       if (typeof b.buyer !== 'string' || !b.buyer.startsWith('0x')) {
         return NextResponse.json({ error: 'buyer wallet address is required.' }, { status: 400 });
@@ -107,7 +115,7 @@ export async function POST(request: Request) {
           return NextResponse.json({ error: `Channel creation not verified on-chain: ${message}` }, { status: 502 });
         }
         try {
-          const amountOnChain = BigInt(Math.round(manifest.priceShelbyUSD * 10 ** 8)).toString();
+          const amountOnChain = BigInt(Math.round(purchasePrice * 10 ** 8)).toString();
           const confirmed = await confirmChannelAndBuildApproval({
             sender: b.buyer,
             receiver: manifest.publisherAddress,
@@ -131,7 +139,7 @@ export async function POST(request: Request) {
           sender: AccountAddress.fromString(b.buyer),
           receiver: AccountAddress.fromString(manifest.publisherAddress),
         });
-        const min = BigInt(Math.round(manifest.priceShelbyUSD * 10 ** 8));
+        const min = BigInt(Math.round(purchasePrice * 10 ** 8));
         const funded = channels.some((c) => c.balance >= min);
         if (!funded) {
           return NextResponse.json(
@@ -150,7 +158,7 @@ export async function POST(request: Request) {
       blobPath: paidManifest.blobPath,
       buyer: b.buyer,
       seller: paidManifest.publisherAddress || 'unknown',
-      amountShelbyUSD: paidManifest.priceShelbyUSD,
+      amountShelbyUSD: purchasePrice,
       hash: typeof b.createHash === 'string' ? b.createHash : '',
       kind: paidManifest.kind,
       rangeBytes: typeof b.rangeBytes === 'number' && Number.isFinite(b.rangeBytes) ? Math.max(0, Math.floor(b.rangeBytes)) : undefined,

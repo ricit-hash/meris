@@ -50,7 +50,7 @@ export default function RangeRequest({
   const router = useRouter();
   const [count, setCount] = useState(() => String(Math.max(1, Math.round(records * 0.1))));
   const [checking, setChecking] = useState(false);
-  const [requested, setRequested] = useState(false);
+  const [checkoutState, setCheckoutState] = useState<'idle' | 'quoting' | 'payment' | 'preparing' | 'ready' | 'error'>('idle');
   const [streamError, setStreamError] = useState('');
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [paymentHash, setPaymentHash] = useState<string | null>(null);
@@ -68,6 +68,9 @@ export default function RangeRequest({
 
   async function request() {
     setChecking(true);
+    setStreamError('');
+    setDownloadUrl(null);
+    setCheckoutState('quoting');
     try {
       const { getConnectedWallet, signAndSubmitTransaction } = await import('../../lib/wallet/aptos-client');
       const wallet = await getConnectedWallet();
@@ -77,7 +80,7 @@ export default function RangeRequest({
       }
       if (!canStream) {
         setStreamError('Sample listings can\'t be downloaded — streaming needs a shelby://0x-address/name blob path.');
-        setRequested(true);
+        setCheckoutState('error');
         return;
       }
 
@@ -88,7 +91,7 @@ export default function RangeRequest({
       if (!free) {
         if (!manifestId) {
           setStreamError('Payment needs a published manifest — publish the dataset to the market first.');
-          setRequested(true);
+          setCheckoutState('error');
           return;
         }
         const quoteRes = await fetch('/api/payments/quote', {
@@ -99,18 +102,19 @@ export default function RangeRequest({
             blobPath,
             start: 0,
             end: isFile ? undefined : bytes,
+            records: isFile ? undefined : wanted,
             buyer: wallet.address,
           }),
         });
         if (quoteRes.status === 503) {
           setStreamError('Shelby not configured — request saved as local preview.');
-          setRequested(true);
+          setCheckoutState('error');
           return;
         }
         if (!quoteRes.ok) {
           const quoteErr = (await quoteRes.json()) as { error?: string };
           setStreamError(quoteErr.error ?? 'Payment quote failed.');
-          setRequested(true);
+          setCheckoutState('error');
           return;
         }
         const quote = (await quoteRes.json()) as {
@@ -121,10 +125,11 @@ export default function RangeRequest({
           needsInitialize?: boolean;
           amountShelbyUSD?: number;
         };
+        setCheckoutState('payment');
         if (quote.needsCreate) {
           if (!quote.payload || !quote.pendingKeyId) {
             setStreamError('Payment quote returned no channel payload.');
-            setRequested(true);
+            setCheckoutState('error');
             return;
           }
           // One-time init (buyer signs) if the buyer has no channels yet.
@@ -140,7 +145,8 @@ export default function RangeRequest({
         }
       }
 
-      // Fase C: minta signed URL dari server (access control).
+      setCheckoutState('preparing');
+      // Ask Meris for a delivery permission after payment/authorization.
       const res = await fetch('/api/requests', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -158,23 +164,29 @@ export default function RangeRequest({
       });
       if (res.status === 503) {
         setStreamError('Shelby not configured — request saved as local preview.');
-        setRequested(true);
+        setCheckoutState('error');
         return;
       }
       if (!res.ok) {
         const data = (await res.json()) as { error?: string };
         setStreamError(data.error ?? 'Request failed.');
-        setRequested(true);
+        setCheckoutState('error');
         return;
       }
       const data = (await res.json()) as { url?: string };
-      if (data.url) setDownloadUrl(data.url);
+      if (!data.url) {
+        setStreamError('Delivery permission was not returned by Meris.');
+        setCheckoutState('error');
+        return;
+      }
+      setDownloadUrl(data.url);
+      setCheckoutState('ready');
     } catch {
       setStreamError('Request failed — check the server.');
+      setCheckoutState('error');
     } finally {
       setChecking(false);
     }
-    setRequested(true);
   }
 
   const presets = [0.1, 0.25, 0.5, 1];
@@ -191,20 +203,26 @@ export default function RangeRequest({
         </span>
       </div>
 
-      {requested ? (
-        <div className="mt-6 rounded-[12px] border border-[#3a3a3a] bg-[#d0d0d0]/10 px-5 py-6 text-center">
-          <p className="flex items-center justify-center gap-2 text-[12px] uppercase tracking-[0.1em] text-[#d0d0d0]">
-            <i className="h-[5px] w-[5px] rounded-full bg-[#d0d0d0]" />
-            Request sent
+      {checkoutState !== 'idle' ? (
+        <div className={`mt-6 rounded-[12px] border px-5 py-6 text-center ${checkoutState === 'ready' ? 'border-[#3a3a3a] bg-[#d0d0d0]/10' : checkoutState === 'error' ? 'border-[#5a302b] bg-[#2a1513]' : 'border-[#303030] bg-[#0f0f0f]'}`}>
+          <p className={`flex items-center justify-center gap-2 text-[12px] uppercase tracking-[0.1em] ${checkoutState === 'error' ? 'text-[#e06c5b]' : 'text-[#d0d0d0]'}`}>
+            <i className={`h-[5px] w-[5px] rounded-full ${checkoutState === 'error' ? 'bg-[#e06c5b]' : 'bg-[#d0d0d0]'}`} />
+            {checkoutState === 'ready' ? 'Delivery ready' : checkoutState === 'error' ? 'Checkout failed' : checkoutState === 'payment' ? 'Approve payment' : checkoutState === 'preparing' ? 'Preparing delivery' : 'Preparing quote'}
           </p>
-          <p className="mx-auto mt-3 max-w-[34ch] text-[13px] leading-6 text-[#999]">
-            {isFile
-              ? `Full file (${size}) requested${!free ? ` for ${formatShelbyPrice(priceShelbyUSD)}` : ''} from the Shelby blob. Delivery is a local preview until the backend ships.`
-              : rowIndexed
-                ? `${fmt.format(wanted)} records requested — the slice ends exactly on the last row, nothing truncated.`
-                : `${fmt.format(wanted)} records (≈ ${formatBytes(bytes)}) requested${!free ? ` for ${formatShelbyPrice(slicePrice)}` : ''} from the Shelby blob. Delivery is a local preview until the backend ships.`}
-          </p>
-          {downloadUrl ? (
+          {checkoutState === 'ready' ? (
+            <p className="mx-auto mt-3 max-w-[34ch] text-[13px] leading-6 text-[#999]">
+              {isFile
+                ? `Full file (${size}) is ready.`
+                : `${fmt.format(wanted)} records${rowIndexed ? ' · exact row boundary' : ` · ≈ ${formatBytes(bytes)}`}${!free ? ` · ${formatShelbyPrice(slicePrice)}` : ' · Free'}.`}
+            </p>
+          ) : checkoutState === 'error' ? (
+            <p className="mx-auto mt-3 max-w-[40ch] text-[13px] leading-6 text-[#e06c5b]">{streamError || 'The request was not completed.'}</p>
+          ) : (
+            <p className="mx-auto mt-3 max-w-[34ch] text-[13px] leading-6 text-[#999]">
+              {checkoutState === 'payment' ? 'Confirm the ShelbyUSD channel transaction in your wallet.' : 'Meris is validating the request. Do not close this page.'}
+            </p>
+          )}
+          {downloadUrl && checkoutState === 'ready' ? (
             <a
               href={downloadUrl}
               download
@@ -215,12 +233,9 @@ export default function RangeRequest({
                 <path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
               </svg>
             </a>
-          ) : streamError ? (
-            <p className="mt-4 text-[11px] leading-5 text-[#e06c5b]">{streamError}</p>
-          ) : !canStream ? (
-            <p className="mt-4 text-[11px] text-[#666]">
-              Streaming needs a shelby://0x-address/name blob path — sample data can&apos;t be downloaded.
-            </p>
+          ) : null}
+          {paymentHash ? (
+            <p className="mt-4 break-all font-mono text-[10px] leading-5 text-[#666]">Payment tx: {paymentHash}</p>
           ) : null}
         </div>
       ) : isFile ? (

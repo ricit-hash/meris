@@ -4,6 +4,7 @@ import { parseBlobPath } from '../../../../lib/shelby';
 import { prepareChannelCreation, getMicropaymentClient } from '../../../../lib/payments';
 import { checkRateLimit } from '../../../../lib/rate-limit';
 import { AccountAddress } from '@aptos-labs/ts-sdk';
+import { calculateSlicePrice } from '../../../../lib/purchase-quote';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -19,7 +20,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid JSON body.' }, { status: 400 });
   }
 
-  const b = body as { manifestId?: unknown; blobPath?: unknown; start?: unknown; end?: unknown; buyer?: unknown };
+  const b = body as { manifestId?: unknown; blobPath?: unknown; start?: unknown; end?: unknown; records?: unknown; buyer?: unknown };
   if (typeof b.manifestId !== 'string' || !b.manifestId.startsWith('m-')) {
     return NextResponse.json(
       { error: 'Payments require a published manifest (m-*). Publish the dataset first.' },
@@ -55,17 +56,13 @@ export async function POST(request: Request) {
     );
   }
 
-  // Proportional price with a 1 sUSD minimum, matching the buyer UI.
-  let slicePrice = manifest.priceShelbyUSD;
-  if (manifest.kind === 'range') {
-    const totalRecords = manifest.records;
-    const start = typeof b.start === 'number' && Number.isFinite(b.start) ? Math.max(0, Math.floor(b.start)) : 0;
-    const endRaw = typeof b.end === 'number' && Number.isFinite(b.end) ? Math.floor(b.end) : undefined;
-    const wanted = endRaw !== undefined ? Math.min(Math.max(1, endRaw - start), totalRecords) : 1;
-    const pct = totalRecords > 0 ? wanted / totalRecords : 0;
-    slicePrice = Math.max(1, manifest.priceShelbyUSD * pct);
-  }
-  slicePrice = Math.round(slicePrice * 100) / 100;
+  const requestedRecords = typeof b.records === 'number' && Number.isFinite(b.records) ? Math.max(1, Math.floor(b.records)) : manifest.records;
+  const slicePrice = calculateSlicePrice({
+    priceShelbyUSD: manifest.priceShelbyUSD,
+    kind: manifest.kind,
+    records: requestedRecords,
+    totalRecords: manifest.records,
+  });
 
   const amountOnChain = BigInt(Math.round(slicePrice * 10 ** 8)).toString();
 

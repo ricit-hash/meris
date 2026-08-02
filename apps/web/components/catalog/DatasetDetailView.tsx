@@ -11,6 +11,7 @@ import { getDatasets, draftToListing, type CatalogListing } from '../../lib/data
 import { getProfile } from '../../lib/profile';
 import type { Manifest } from '../../lib/manifest-store';
 import { inferColumnSchema } from '../../lib/dataset-schema';
+import { formatExpiry, type AvailabilityStatus } from '../../lib/availability';
 
 // Lazy-loaded: interactive buyer panel, split into its own chunk.
 const RangeRequest = dynamic(() => import('./RangeRequest'), { ssr: true });
@@ -33,6 +34,7 @@ export default function DatasetDetailView({ id }: { id: string }) {
   const [downloaded, setDownloaded] = useState(0);
   const [related, setRelated] = useState<CatalogListing[]>([]);
   const [versions, setVersions] = useState<Manifest[]>([]);
+  const [availability, setAvailability] = useState<{ status: AvailabilityStatus; checkedAt?: number; expiresAt?: number; exactSlicing?: boolean; sizeBytes?: number } | null>(null);
 
   const sample: (SampleDataset & { isMine: false }) | undefined = useMemo(
     () => (getSampleDataset(id) ? { ...getSampleDataset(id)!, isMine: false } : undefined),
@@ -102,6 +104,20 @@ export default function DatasetDetailView({ id }: { id: string }) {
       };
     }
     setLoaded(true);
+  }, [id]);
+
+  useEffect(() => {
+    if (!id.startsWith('m-')) return;
+    let cancelled = false;
+    void fetch(`/api/manifests/${id}/availability`)
+      .then((res) => res.json())
+      .then((data: { status?: AvailabilityStatus; checkedAt?: number; expiresAt?: number; exactSlicing?: boolean; sizeBytes?: number }) => {
+        if (!cancelled && data.status) setAvailability(data as { status: AvailabilityStatus; checkedAt?: number; expiresAt?: number; exactSlicing?: boolean; sizeBytes?: number });
+      })
+      .catch(() => {
+        if (!cancelled) setAvailability({ status: 'unavailable' });
+      });
+    return () => { cancelled = true; };
   }, [id]);
 
   const listing = sample ?? (loaded ? draft : null);
@@ -351,6 +367,20 @@ export default function DatasetDetailView({ id }: { id: string }) {
                     <span className="mt-1 block truncate text-[10px] text-[#777]">{version.changelog || 'Original publication'}</span>
                   </Link>
                 ))}
+              </div>
+            </section>
+          ) : null}
+
+          {availability ? (
+            <section className="mt-6 rounded-[14px] border border-[#303030] bg-[#171717] p-4">
+              <div className="flex items-center justify-between">
+                <p className="ref-label">TRUST & AVAILABILITY</p>
+                <span className="text-[10px] uppercase tracking-[0.1em] text-[#888]">{availability.status}</span>
+              </div>
+              <div className="mt-4 grid gap-3 text-[12px] sm:grid-cols-3">
+                <div><p className="text-[#666]">Storage</p><p className="mt-1 text-[#c0c0c0]">{availability.status === 'available' ? 'Blob available' : availability.status === 'expired' ? 'Blob expired' : availability.status === 'missing' ? 'Blob not found' : 'Could not verify'}</p></div>
+                <div><p className="text-[#666]">Delivery</p><p className="mt-1 text-[#c0c0c0]">{availability.exactSlicing ? 'Exact row slicing' : 'Approximate byte range'}</p></div>
+                <div><p className="text-[#666]">Expiry</p><p className="mt-1 text-[#c0c0c0]">{formatExpiry(availability.expiresAt)}</p></div>
               </div>
             </section>
           ) : null}

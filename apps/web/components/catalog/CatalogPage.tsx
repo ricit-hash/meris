@@ -9,7 +9,7 @@ import DatasetCard from './DatasetCard';
 import AppMarketplaceFilters from './AppMarketplaceFilters';
 import AppDatasetCard from './AppDatasetCard';
 import GateLink from '../shared/GateLink';
-import { sampleDatasets, sortOptions, type SampleDataset } from './sample-data';
+import { sortOptions } from './sample-data';
 import { getDatasets, draftToListing, type CatalogListing } from '../../lib/datasets';
 import { getProfile } from '../../lib/profile';
 import type { Manifest } from '../../lib/manifest-store';
@@ -109,11 +109,11 @@ export default function CatalogPage({ embedded = false }: { embedded?: boolean }
     pushUrl('', sort, {});
   }
 
-  // Samples are stable at SSR; publisher drafts live in localStorage and are
-  // loaded after mount so server and client HTML match on hydration.
-  const samples: CatalogListing[] = useMemo(
-    () => sampleDatasets.map((d) => ({ ...d, isMine: false })),
-    [],
+  const liveDrafts = useMemo(() => drafts.filter((dataset) => dataset.blobPath.startsWith('shelby://')), [drafts]);
+  const liveManifests = useMemo(() => serverManifests.filter((dataset) => dataset.blobPath.startsWith('shelby://')), [serverManifests]);
+  const all: CatalogListing[] = useMemo(
+    () => [...liveManifests, ...liveDrafts],
+    [liveManifests, liveDrafts],
   );
 
   useEffect(() => {
@@ -122,8 +122,7 @@ export default function CatalogPage({ embedded = false }: { embedded?: boolean }
     setDrafts(getDatasets().map((d) => draftToListing(d, username)));
   }, []);
 
-  // Server-side manifests (Fase B). Falls back silently to local drafts +
-  // samples when the API is unavailable (local-preview mode).
+  // Only blob-backed manifests are eligible for discovery.
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -166,11 +165,6 @@ export default function CatalogPage({ embedded = false }: { embedded?: boolean }
       cancelled = true;
     };
   }, []);
-
-  const all: CatalogListing[] = useMemo(
-    () => [...serverManifests, ...drafts, ...samples],
-    [serverManifests, drafts, samples],
-  );
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();

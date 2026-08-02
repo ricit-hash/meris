@@ -38,6 +38,7 @@ export async function POST(request: Request) {
     publisher?: unknown;
     publisherAddress?: unknown;
     uploadedAt?: unknown;
+    expiresAt?: unknown;
     publicKeyHex?: unknown;
     signature?: unknown;
     fullMessage?: unknown;
@@ -93,6 +94,8 @@ export async function POST(request: Request) {
 
   const uploadedAt =
     typeof b.uploadedAt === 'number' && Number.isFinite(b.uploadedAt) ? Math.floor(b.uploadedAt) : undefined;
+  const expiresAt =
+    typeof b.expiresAt === 'number' && Number.isFinite(b.expiresAt) ? Math.floor(b.expiresAt) : undefined;
 
   const manifest = createManifest({
     name: b.name.trim(),
@@ -108,6 +111,7 @@ export async function POST(request: Request) {
     publisher,
     publisherAddress,
     uploadedAt,
+    expiresAt,
   });
 
   return NextResponse.json({ manifest }, { status: 201 });

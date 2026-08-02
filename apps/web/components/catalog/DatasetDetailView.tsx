@@ -78,6 +78,7 @@ export default function DatasetDetailView({ id }: { id: string }) {
             blobPath: m.blobPath,
             records: m.records,
             uploadedAt: m.uploadedAt,
+            expiresAt: m.expiresAt,
             updatedDays: 0,
             isMine: m.publisher === (profile?.username ?? 'publisher'),
             kind: m.kind,
@@ -284,13 +285,17 @@ export default function DatasetDetailView({ id }: { id: string }) {
                   <p className="mt-2 border-t border-[#262626] pt-2 text-[11px] leading-5 text-[#888]">
                     Blob expires{' '}
                     <span className="text-[#a7a7a7]">
-                      {new Date(listing.uploadedAt + 90 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', {
+                      {new Date(
+                        'expiresAt' in listing && listing.expiresAt
+                          ? listing.expiresAt
+                          : listing.uploadedAt + 90 * 24 * 60 * 60 * 1000,
+                      ).toLocaleDateString('en-US', {
                         month: 'short',
                         day: 'numeric',
                         year: 'numeric',
                       })}
                     </span>{' '}
-                    (90 days after upload). Re-upload to extend.
+                    after upload. Re-upload to extend.
                   </p>
                 ) : (
                   <p className="mt-2 border-t border-[#262626] pt-2 text-[11px] leading-5 text-[#666]">

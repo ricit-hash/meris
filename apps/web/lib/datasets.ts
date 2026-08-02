@@ -69,6 +69,8 @@ export type CatalogListing = {
   updatedDays: number;
   /** Epoch ms when the blob was uploaded (manifest listings). */
   uploadedAt?: number;
+  /** Epoch ms when the blob expires on Shelby (manifest listings). */
+  expiresAt?: number;
   isMine: boolean;
   kind: DeliveryKind;
 };

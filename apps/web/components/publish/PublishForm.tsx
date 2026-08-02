@@ -30,6 +30,8 @@ export default function PublishForm({ address, username }: Props) {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadedAt, setUploadedAt] = useState<number | undefined>(undefined);
+  const [expiryDays, setExpiryDays] = useState(90);
+  const [expiresAt, setExpiresAt] = useState<number | undefined>(undefined);
 
   async function handleUpload() {
     if (!file) {
@@ -59,13 +61,15 @@ export default function PublishForm({ address, username }: Props) {
       fd.append('publicKeyHex', wallet.publicKey);
       fd.append('signature', signed.signature);
       fd.append('fullMessage', signed.fullMessage);
+      fd.append('expiryDays', String(expiryDays));
       const res = await fetch('/api/blobs/upload', { method: 'POST', body: fd });
-      const data = (await res.json()) as { ok?: boolean; blobPath?: string; size?: string; error?: string };
+      const data = (await res.json()) as { ok?: boolean; blobPath?: string; size?: string; expiresAt?: number; error?: string };
       if (res.ok && data.ok && data.blobPath) {
         setBlobPath(data.blobPath);
         setFileSize(data.size ?? '');
         setVerify('ok');
         setUploadedAt(Date.now());
+        if (typeof data.expiresAt === 'number') setExpiresAt(data.expiresAt);
         setVerifyMsg(`Uploaded to Shelby · ${data.size ?? ''}`);
       } else if (res.status === 503) {
         setVerify('fail');
@@ -192,6 +196,7 @@ export default function PublishForm({ address, username }: Props) {
           signature: signed.signature,
           fullMessage: signed.fullMessage,
           uploadedAt,
+          expiresAt: expiresAt ?? Date.now() + expiryDays * 86_400_000,
         }),
       });
     } catch {
@@ -358,6 +363,24 @@ export default function PublishForm({ address, username }: Props) {
                           <input type="number" min="1" className={`mt-2 ${inputClass}`} value={records} onChange={(e) => setRecords(e.target.value)} placeholder="150000" />
                         </label>
                       ) : null}
+                      <label className="block">
+                        <span className={labelClass}>Blob expires</span>
+                        <select
+                          className={`mt-2 ${inputClass}`}
+                          value={expiryDays}
+                          onChange={(e) => {
+                            const days = Number(e.target.value);
+                            setExpiryDays(Number.isFinite(days) ? days : 90);
+                            setExpiresAt(undefined);
+                          }}
+                        >
+                          <option value={7}>7 days</option>
+                          <option value={30}>30 days</option>
+                          <option value={90}>90 days</option>
+                          <option value={180}>180 days</option>
+                          <option value={365}>1 year</option>
+                        </select>
+                      </label>
                     </div>
                     <p className="text-[12px] leading-5 text-[#666]">
                       {kind === 'range'

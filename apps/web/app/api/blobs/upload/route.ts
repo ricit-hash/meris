@@ -10,6 +10,7 @@ import { setRowIndex } from '../../../../lib/row-index-store';
 import { recoverPublisherAddress } from '../../../../lib/wallet-auth';
 import { checkRateLimit, clientIp } from '../../../../lib/rate-limit';
 import { isAllowedOrigin } from '../../../../lib/origin';
+import { parseExpiryDays, blobExpiresAtMs } from '../../../../lib/blob-expiry';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -18,6 +19,8 @@ const MAX_UPLOAD_BYTES = 100 * 1024 * 1024; // 100 MB
 const UPLOADS_PER_ADDRESS = 10;
 const UPLOADS_PER_IP = 20;
 const RATE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const DEFAULT_EXPIRY_DAYS = Number(process.env.BLOB_EXPIRATION_DAYS ?? 90);
+const MAX_EXPIRY_DAYS = Number(process.env.MAX_BLOB_EXPIRATION_DAYS ?? 365);
 
 export async function POST(request: Request) {
   // CSRF: multipart uploads are a CORS "simple request" — block cross-site
@@ -109,7 +112,11 @@ export async function POST(request: Request) {
   }
 
   try {
-    const expirationMicros = Date.now() * 1000 + 90 * 24 * 60 * 60 * 1_000_000; // 90 hari
+    // Expiry: user choice when sent (capped), else the server default.
+    const expiryDays =
+      parseExpiryDays(form.get('expiryDays'), MAX_EXPIRY_DAYS) ?? DEFAULT_EXPIRY_DAYS;
+    const now = Date.now();
+    const expirationMicros = now * 1000 + expiryDays * 24 * 60 * 60 * 1_000_000;
     await client.upload({ blobData: bytes, signer: account, blobName, expirationMicros });
     const accountAddress = account.accountAddress.toString();
 
@@ -130,6 +137,7 @@ export async function POST(request: Request) {
       size: formatBlobSize(bytes.length),
       blobPath: `shelby://${accountAddress}/${blobName}`,
       lineCount,
+      expiresAt: blobExpiresAtMs(now, expiryDays),
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown Shelby error';

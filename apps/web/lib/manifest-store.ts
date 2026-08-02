@@ -20,8 +20,10 @@ export type Manifest = {
   publisher: string;
   /** Wallet address of the publisher — payment receiver. */
   publisherAddress: string;
-  /** Epoch ms when the blob was uploaded to Shelby. Blobs expire 90 days after upload. */
+  /** Epoch ms when the blob was uploaded to Shelby. Blobs expire after upload. */
   uploadedAt?: number;
+  /** Epoch ms when the blob expires on Shelby. */
+  expiresAt?: number;
   /** Number of signed download URLs issued for this listing. */
   downloads?: number;
   /** Vote delta (upvotes - downvotes). */

@@ -2,11 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { getProfile, type PublisherProfile } from '../../lib/profile';
 import PurchasesView from '../../components/purchases/PurchasesView';
+import BrandLoader from '../../components/brand/BrandLoader';
+import WorkspaceFrame from '../../components/dashboard/WorkspaceFrame';
 
 export default function PurchasesRoute() {
   const router = useRouter();
   const [address, setAddress] = useState<string | null>(null);
+  const [profile, setProfile] = useState<PublisherProfile | null>(null);
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
@@ -16,10 +20,11 @@ export default function PurchasesRoute() {
       const wallet = await getConnectedWallet();
       if (cancelled) return;
       if (!wallet?.address) {
-        router.replace('/gate');
+        router.replace('/gate?intent=purchases&next=/purchases');
         return;
       }
       setAddress(wallet.address);
+      setProfile(getProfile());
       setChecking(false);
     })();
     return () => {
@@ -28,14 +33,16 @@ export default function PurchasesRoute() {
   }, [router]);
 
   if (checking || !address) {
-    return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <div className="h-[5px] w-[140px] overflow-hidden rounded-full bg-[#262626]">
-          <div className="h-full w-1/3 animate-[progress_1.2s_ease-in-out_infinite] rounded-full bg-[#7bafa0]" />
-        </div>
-      </div>
-    );
+    return <BrandLoader label="Checking wallet" hint="Restoring your purchases." />;
+  }
+  if (!profile) {
+    router.replace('/profile');
+    return <BrandLoader label="Profile needed" hint="Setting up your Meris workspace…" />;
   }
 
-  return <PurchasesView address={address} />;
+  return (
+    <WorkspaceFrame address={address} profile={profile} title="Purchases">
+      <PurchasesView address={address} />
+    </WorkspaceFrame>
+  );
 }

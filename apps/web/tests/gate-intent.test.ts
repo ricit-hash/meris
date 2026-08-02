@@ -10,8 +10,8 @@ describe('gate intent', () => {
 
   it('only allows safe internal next paths', () => {
     expect(safeGateNext('/catalog/m-123')).toBe('/catalog/m-123');
-    expect(safeGateNext('https://evil.example')).toBe('/profile');
-    expect(safeGateNext('//evil.example')).toBe('/profile');
-    expect(safeGateNext('/\\evil')).toBe('/profile');
+    expect(safeGateNext('https://evil.example')).toBe('/dashboard');
+    expect(safeGateNext('//evil.example')).toBe('/dashboard');
+    expect(safeGateNext('/\\evil')).toBe('/dashboard');
   });
 });

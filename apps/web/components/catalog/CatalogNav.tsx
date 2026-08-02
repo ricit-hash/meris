@@ -24,7 +24,7 @@ export default function CatalogNav() {
             </Link>
           ))}
         </nav>
-        <GateLink href="/gate" className="rounded-[12px] bg-[#f2f2f2] px-6 py-[12px] text-[14px] font-medium text-[#222] no-underline hover:opacity-85">
+        <GateLink href="/gate?intent=app&next=/dashboard" className="rounded-[12px] bg-[#f2f2f2] px-6 py-[12px] text-[14px] font-medium text-[#222] no-underline hover:opacity-85">
           Login
         </GateLink>
       </header>

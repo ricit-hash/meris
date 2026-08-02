@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import CatalogNav from '../catalog/CatalogNav';
 
 type LedgerEntry = {
   id: string;
@@ -99,10 +98,8 @@ export default function PurchasesView({ address }: { address: string }) {
   }
 
   return (
-    <div className="ref-shell">
-      <CatalogNav />
-      <main className="px-8 py-14 md:px-12 md:py-16">
-        <div className="ref-rail">
+    <main className="px-6 py-10 md:px-10 md:py-12">
+        <div className="mx-auto max-w-[76rem]">
           <p className="ref-label">PURCHASES</p>
           <div>
             <h1 className="text-[clamp(2.2rem,4.4vw,3.6rem)] font-light leading-[0.95] tracking-[-0.05em] text-[#ededed]">
@@ -124,7 +121,7 @@ export default function PurchasesView({ address }: { address: string }) {
                   Request a slice of any listing in the catalog — paid or free — and it shows up here.
                 </p>
                 <Link
-                  href="/catalog"
+                  href="/marketplace"
                   className="mt-5 inline-block rounded-[12px] bg-[#f2f2f2] px-6 py-[12px] text-[14px] font-medium text-[#222] no-underline transition-[opacity,transform] duration-150 hover:opacity-85 active:scale-[0.97]"
                 >
                   Browse the catalog
@@ -192,14 +189,5 @@ export default function PurchasesView({ address }: { address: string }) {
           </div>
         </div>
       </main>
-      <footer className="border-t border-[#2b2b2b] px-8 py-8 md:px-12">
-        <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.1em] text-[#666]">
-          <span>Built on Shelby Protocol</span>
-          <Link href="/catalog" className="no-underline hover:text-white">
-            Back to catalog
-          </Link>
-        </div>
-      </footer>
-    </div>
   );
 }

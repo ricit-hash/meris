@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import CatalogNav from './CatalogNav';
 import DatasetCard from './DatasetCard';
-import DiscussionSection from './DiscussionSection';
 import { getSampleDataset, formatShelbyPrice, type SampleDataset } from './sample-data';
 import { getDatasets, draftToListing, type CatalogListing } from '../../lib/datasets';
 import { getProfile } from '../../lib/profile';
@@ -14,6 +13,8 @@ import type { Manifest } from '../../lib/manifest-store';
 
 // Lazy-loaded: interactive buyer panel, split into its own chunk.
 const RangeRequest = dynamic(() => import('./RangeRequest'), { ssr: true });
+// Lazy-loaded: discussion is below the primary dataset and purchase content.
+const DiscussionSection = dynamic(() => import('./DiscussionSection'), { ssr: true });
 
 const fmt = new Intl.NumberFormat('en-US');
 

@@ -1,13 +1,26 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import type { CatalogListing } from '../../lib/datasets';
 import { formatShelbyPrice } from './sample-data';
 
 export default function AppDatasetCard({ dataset, basePath = '/marketplace' }: { dataset: CatalogListing; basePath?: string }) {
   const [copied, setCopied] = useState(false);
-  const availability = dataset.blobPath.startsWith('shelby://') ? (dataset.expiresAt && dataset.expiresAt <= Date.now() ? 'Expired' : 'Available') : 'Draft';
+  const [availability, setAvailability] = useState<'checking' | 'available' | 'expired' | 'missing' | 'unavailable' | 'draft'>(dataset.id.startsWith('m-') ? 'checking' : 'draft');
+  useEffect(() => {
+    if (!dataset.id.startsWith('m-')) return;
+    let cancelled = false;
+    void fetch(`/api/manifests/${encodeURIComponent(dataset.id)}/availability`)
+      .then(async (response) => {
+        if (!response.ok) throw new Error('availability request failed');
+        const data = (await response.json()) as { status?: string };
+        const next = data.status === 'available' || data.status === 'expired' || data.status === 'missing' || data.status === 'unavailable' ? data.status : 'unavailable';
+        if (!cancelled) setAvailability(next);
+      })
+      .catch(() => { if (!cancelled) setAvailability('unavailable'); });
+    return () => { cancelled = true; };
+  }, [dataset.id]);
   async function copyId() {
     try { await navigator.clipboard.writeText(dataset.id); setCopied(true); setTimeout(() => setCopied(false), 1200); } catch { /* clipboard unavailable */ }
   }
@@ -17,7 +30,7 @@ export default function AppDatasetCard({ dataset, basePath = '/marketplace' }: {
         <div className="flex flex-wrap items-baseline gap-3">
           <h2 className="truncate text-[15px] font-medium tracking-[-0.015em] text-[#e5e5e5]">{dataset.title}</h2>
           <span className="text-[10px] uppercase tracking-[0.1em] text-[#666]">{dataset.kind === 'file' ? 'Full file' : 'Range'}</span>
-          <span className={`text-[10px] uppercase tracking-[0.1em] ${availability === 'Available' ? 'text-[#aaa]' : availability === 'Expired' ? 'text-[#b88]' : 'text-[#666]'}`}>{availability}</span>
+          <span className={`text-[10px] uppercase tracking-[0.1em] ${availability === 'available' ? 'text-[#aaa]' : availability === 'expired' || availability === 'missing' ? 'text-[#b88]' : 'text-[#666]'}`}>{availability === 'checking' ? 'Checking' : availability === 'available' ? 'Available' : availability === 'expired' ? 'Expired' : availability === 'missing' ? 'Missing' : availability === 'draft' ? 'Draft' : 'Unavailable'}</span>
         </div>
         <p className="mt-1.5 text-[11px] text-[#aaa]">{dataset.publisher}<span className="mx-2 text-[#444]">·</span>{dataset.updated}</p>
         <p className="mt-3 line-clamp-2 max-w-[62ch] text-[12px] leading-5 text-[#888]">{dataset.description}</p>

@@ -43,6 +43,7 @@ export default function CatalogPage({ embedded = false }: { embedded?: boolean }
   const [sort, setSort] = useState('Most requested');
   const [drafts, setDrafts] = useState<CatalogListing[]>([]);
   const [serverManifests, setServerManifests] = useState<CatalogListing[]>([]);
+  const [filterOpen, setFilterOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement | null>(null);
 
   // Shareable catalog state: the URL is the source of truth for reads.
@@ -51,8 +52,13 @@ export default function CatalogPage({ embedded = false }: { embedded?: boolean }
     setQuery(searchParams.get('q') ?? '');
     const s = searchParams.get('sort');
     setSort(s && (sortOptions as readonly string[]).includes(s) ? s : 'Most requested');
-    const cat = searchParams.get('cat');
-    setActive(cat ? { Category: cat.split(',') } : {});
+    const listParam = (key: string) => searchParams.get(key)?.split(',').filter(Boolean) ?? [];
+    setActive({
+      ...(listParam('cat').length ? { Category: listParam('cat') } : {}),
+      ...(listParam('delivery').length ? { Delivery: listParam('delivery') } : {}),
+      ...(listParam('price').length ? { Price: listParam('price') } : {}),
+      ...(listParam('license').length ? { License: listParam('license') } : {}),
+    });
   }, [searchParams]);
 
   // Keyboard shortcut: "/" focuses search.
@@ -71,8 +77,8 @@ export default function CatalogPage({ embedded = false }: { embedded?: boolean }
     const p = new URLSearchParams();
     if (nextQ.trim()) p.set('q', nextQ.trim());
     if (nextSort && nextSort !== 'Most requested') p.set('sort', nextSort);
-    const cat = nextActive['Category'] ?? [];
-    if (cat.length) p.set('cat', cat.join(','));
+    const params: [string, string[]][] = [['cat', nextActive.Category ?? []], ['delivery', nextActive.Delivery ?? []], ['price', nextActive.Price ?? []], ['license', nextActive.License ?? []]];
+    for (const [key, values] of params) if (values.length) p.set(key, values.join(','));
     const str = p.toString();
     router.replace(`${embedded ? '/marketplace' : '/catalog'}${str ? `?${str}` : ''}`, { scroll: false });
   }
@@ -216,7 +222,7 @@ export default function CatalogPage({ embedded = false }: { embedded?: boolean }
               <label className="flex h-10 items-center gap-3 border border-[#303030] bg-[#101010] px-3 md:w-[220px]"><span className="text-[10px] uppercase tracking-[0.08em] text-[#666]">Sort</span><select value={sort} onChange={(e) => updateSort(e.target.value)} className="h-full w-full bg-transparent text-[12px] text-[#e5e5e5] outline-none"><option className="bg-[#171717]">{sortOptions[0]}</option>{sortOptions.slice(1).map((option) => <option key={option} className="bg-[#171717]">{option}</option>)}</select></label>
             </div>
             <div className="mt-6 flex h-11 max-w-[640px] items-center gap-3 border border-[#303030] bg-[#101010] px-4"><svg aria-hidden="true" className="h-4 w-4 shrink-0 text-[#666]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg><input type="search" ref={searchRef} value={query} onChange={(e) => updateQuery(e.target.value)} placeholder="Search manifests, schema, publisher…" className="h-full w-full bg-transparent text-[13px] text-[#ededed] outline-none placeholder:text-[#666]" /><kbd className="hidden border border-[#2b2b2b] px-2 py-[2px] text-[10px] text-[#666] md:block">/</kbd></div>
-            <div className="mt-4 flex items-center gap-3 text-[11px] text-[#666]">{activeCount > 0 ? <button type="button" onClick={clearFilters} className="text-[#aaa] hover:text-white">Clear filters ({activeCount})</button> : <span>Use filters to narrow the market.</span>}</div>
+            <div className="mt-4 flex flex-wrap items-center gap-3 text-[11px] text-[#666]"><button type="button" onClick={() => setFilterOpen(true)} className="border border-[#303030] px-3 py-2 text-[#aaa] hover:border-[#555] hover:text-white">Filters{activeCount ? ` · ${activeCount} active` : ''}</button>{activeCount > 0 ? <button type="button" onClick={clearFilters} className="text-[#aaa] hover:text-white">Clear filters ({activeCount})</button> : <span>Use filters to narrow the market.</span>}</div>
           </section>
         ) : (
           <section className="border-b border-[#262626] px-8 py-8 md:px-12 md:py-10">
@@ -227,10 +233,13 @@ export default function CatalogPage({ embedded = false }: { embedded?: boolean }
           </section>
         )}
 
+        {embedded && filterOpen ? <div className="fixed inset-0 z-50 bg-black/70 lg:hidden" role="dialog" aria-modal="true" aria-label="Marketplace filters"><div className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto border-t border-[#303030] bg-[#101010] p-6"><div className="mb-6 flex items-center justify-between"><h2 className="text-[16px] font-medium text-[#ededed]">Filters</h2><button type="button" onClick={() => setFilterOpen(false)} className="text-[13px] text-[#888] hover:text-white">Done</button></div><AppMarketplaceFilters active={active} onToggle={toggle} mobile /></div></div> : null}
         <section className={`flex gap-8 px-6 py-7 md:px-10 md:py-10 ${embedded ? 'bg-[#0d0d0d]' : 'px-8 md:px-12'}`}>
           {embedded ? <AppMarketplaceFilters active={active} onToggle={toggle} /> : <CatalogFilters active={active} onToggle={toggle} />}
-          {filtered.length === 0 ? (
-            <div className="flex min-w-0 flex-1 flex-col items-center justify-center border border-dashed border-[#2b2b2b] p-16 text-center"><p className="text-[14px] text-[#888]">No datasets match.</p><p className="mt-2 max-w-[36ch] text-[12px] leading-5 text-[#666]">Try a different search term or clear some filters.</p><button type="button" onClick={resetAll} className="mt-5 border border-[#303030] px-5 py-2.5 text-[13px] font-medium text-[#a7a7a7] hover:border-[#4a4a4a] hover:text-white">Reset all</button></div>
+          {all.length === 0 ? (
+            <div className="flex min-w-0 flex-1 flex-col items-center justify-center border border-dashed border-[#2b2b2b] p-16 text-center"><p className="text-[14px] text-[#888]">No live datasets yet.</p><p className="mt-2 max-w-[40ch] text-[12px] leading-5 text-[#666]">Publish a blob-backed dataset to make it available in the marketplace.</p><Link href="/publish" className="mt-5 border border-[#303030] px-5 py-2.5 text-[13px] font-medium text-[#a7a7a7] no-underline hover:border-[#4a4a4a] hover:text-white">Publish a dataset</Link></div>
+          ) : filtered.length === 0 ? (
+            <div className="flex min-w-0 flex-1 flex-col items-center justify-center border border-dashed border-[#2b2b2b] p-16 text-center"><p className="text-[14px] text-[#888]">No listings match these filters.</p><p className="mt-2 max-w-[36ch] text-[12px] leading-5 text-[#666]">Clear filters or try a different search term.</p><button type="button" onClick={resetAll} className="mt-5 border border-[#303030] px-5 py-2.5 text-[13px] font-medium text-[#a7a7a7] hover:border-[#4a4a4a] hover:text-white">Clear filters</button></div>
           ) : (
             <div className={embedded ? 'min-w-0 flex-1' : 'grid min-w-0 flex-1 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3'}>
               {filtered.map((dataset) => embedded ? <AppDatasetCard key={dataset.id} dataset={dataset} basePath="/marketplace" /> : <DatasetCard key={dataset.id} dataset={dataset} basePath="/catalog" />)}

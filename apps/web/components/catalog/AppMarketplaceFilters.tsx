@@ -4,6 +4,7 @@ import { filterGroups } from './sample-data';
 type Props = {
   active: Record<string, string[]>;
   onToggle: (group: string, option: string) => void;
+  mobile?: boolean;
 };
 
 function ListFilter({ label, options, counts, active, onToggle }: { label: string; options: readonly string[]; counts: readonly number[]; active: string[]; onToggle: Props['onToggle'] }) {
@@ -38,13 +39,13 @@ function SegmentedFilter({ label, options, active, onToggle }: { label: string; 
   );
 }
 
-export default function AppMarketplaceFilters({ active, onToggle }: Props) {
+export default function AppMarketplaceFilters({ active, onToggle, mobile = false }: Props) {
   const category = filterGroups.find((group) => group.label === 'Category')!;
   const delivery = filterGroups.find((group) => group.label === 'Delivery')!;
   const price = filterGroups.find((group) => group.label === 'Price')!;
   const license = filterGroups.find((group) => group.label === 'License')!;
   return (
-    <aside className="hidden w-[204px] shrink-0 flex-col gap-7 lg:flex">
+    <aside className={mobile ? 'flex w-full flex-col gap-7' : 'hidden w-[204px] shrink-0 flex-col gap-7 lg:flex'}>
       <ListFilter {...category} active={active.Category ?? []} onToggle={onToggle} />
       <SegmentedFilter {...delivery} active={active.Delivery ?? []} onToggle={onToggle} />
       <SegmentedFilter {...price} active={active.Price ?? []} onToggle={onToggle} />

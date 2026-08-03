@@ -578,6 +578,7 @@ export default function DatasetDetailView({ id, appMode = false }: { id: string;
             </div>
 
             <div id="access" className="lg:pt-2">
+              {appMode ? <div className="mb-3 border-b border-[#262626] pb-3"><p className="text-[10px] uppercase tracking-[0.12em] text-[#666]">ACCESS</p><div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-[#888]"><span>Delivery: {listing.kind === 'file' ? 'Full file' : 'Range slice'}</span><span>Price: {formatShelbyPrice(listing.priceShelbyUSD)}</span><span>Availability: {availability?.status ?? (listing.blobPath.startsWith('shelby://') ? 'available' : 'unavailable')}</span></div></div> : null}
               <RangeRequest
                 size={listing.size}
                 records={listing.records}

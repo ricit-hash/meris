@@ -31,7 +31,13 @@ export default function LedgerRevenue({ address }: { address: string }) {
     let cancelled = false;
     void (async () => {
       try {
-        const res = await fetch(`/api/ledger?account=${encodeURIComponent(address)}&role=seller`);
+        const { getConnectedWallet, signMessageDetailed } = await import('../../lib/wallet/aptos-client');
+        const wallet = await getConnectedWallet();
+        if (!wallet?.publicKey) throw new Error('Wallet public key unavailable');
+        const account = address.toLowerCase();
+        const expiry = Date.now() + 5 * 60 * 1000;
+        const signed = await signMessageDetailed(`meris:ledger:${account}:${expiry}`);
+        const res = await fetch('/api/ledger', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ account, role: 'seller', publicKeyHex: wallet.publicKey, signature: signed.signature, fullMessage: signed.fullMessage }) });
         if (res.status === 503) {
           if (!cancelled) setState({ status: 'unconfigured' });
           return;

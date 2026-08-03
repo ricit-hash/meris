@@ -43,6 +43,7 @@ export default function CatalogPage({ embedded = false }: { embedded?: boolean }
   const [sort, setSort] = useState('Most requested');
   const [drafts, setDrafts] = useState<CatalogListing[]>([]);
   const [serverManifests, setServerManifests] = useState<CatalogListing[]>([]);
+  const [manifestState, setManifestState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [filterOpen, setFilterOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement | null>(null);
 
@@ -163,9 +164,9 @@ export default function CatalogPage({ embedded = false }: { embedded?: boolean }
             kind: m.kind,
           })),
         );
+        setManifestState('ready');
       } catch {
-        // ignore — local-preview mode
-      }
+        if (!cancelled) setManifestState('error');      }
     })();
     return () => {
       cancelled = true;
@@ -236,7 +237,11 @@ export default function CatalogPage({ embedded = false }: { embedded?: boolean }
         {embedded && filterOpen ? <div className="fixed inset-0 z-50 bg-black/70 lg:hidden" role="dialog" aria-modal="true" aria-label="Marketplace filters"><div className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto border-t border-[#303030] bg-[#101010] p-6"><div className="mb-6 flex items-center justify-between"><h2 className="text-[16px] font-medium text-[#ededed]">Filters</h2><button type="button" onClick={() => setFilterOpen(false)} className="text-[13px] text-[#888] hover:text-white">Done</button></div><AppMarketplaceFilters active={active} onToggle={toggle} mobile /></div></div> : null}
         <section className={`flex gap-8 px-6 py-7 md:px-10 md:py-10 ${embedded ? 'bg-[#0d0d0d]' : 'px-8 md:px-12'}`}>
           {embedded ? <AppMarketplaceFilters active={active} onToggle={toggle} /> : <CatalogFilters active={active} onToggle={toggle} />}
-          {all.length === 0 ? (
+          {manifestState === 'loading' && all.length === 0 ? (
+            <div className="flex min-w-0 flex-1 items-center border border-dashed border-[#2b2b2b] p-16 text-[13px] text-[#666]">Loading live listings…</div>
+          ) : manifestState === 'error' && all.length === 0 ? (
+            <div className="flex min-w-0 flex-1 flex-col items-center justify-center border border-dashed border-[#2b2b2b] p-16 text-center"><p className="text-[14px] text-[#999]">Could not load live listings.</p><p className="mt-2 text-[12px] text-[#666]">Check your connection and try again.</p><button type="button" onClick={() => window.location.reload()} className="mt-5 text-[12px] text-[#c8c8c8] hover:text-white">Retry</button></div>
+          ) : all.length === 0 ? (
             <div className="flex min-w-0 flex-1 flex-col items-center justify-center border border-dashed border-[#2b2b2b] p-16 text-center"><p className="text-[14px] text-[#888]">No live datasets yet.</p><p className="mt-2 max-w-[40ch] text-[12px] leading-5 text-[#666]">Publish a blob-backed dataset to make it available in the marketplace.</p><Link href="/publish" className="mt-5 border border-[#303030] px-5 py-2.5 text-[13px] font-medium text-[#a7a7a7] no-underline hover:border-[#4a4a4a] hover:text-white">Publish a dataset</Link></div>
           ) : filtered.length === 0 ? (
             <div className="flex min-w-0 flex-1 flex-col items-center justify-center border border-dashed border-[#2b2b2b] p-16 text-center"><p className="text-[14px] text-[#888]">No listings match these filters.</p><p className="mt-2 max-w-[36ch] text-[12px] leading-5 text-[#666]">Clear filters or try a different search term.</p><button type="button" onClick={resetAll} className="mt-5 border border-[#303030] px-5 py-2.5 text-[13px] font-medium text-[#a7a7a7] hover:border-[#4a4a4a] hover:text-white">Clear filters</button></div>

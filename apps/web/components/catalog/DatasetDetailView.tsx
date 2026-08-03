@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import CatalogNav from './CatalogNav';
+import AppDatasetCard from './AppDatasetCard';
 import DatasetCard from './DatasetCard';
 import { getSampleDataset, formatShelbyPrice, type SampleDataset } from './sample-data';
 import { getDatasets, draftToListing, type CatalogListing } from '../../lib/datasets';
@@ -324,7 +325,7 @@ export default function DatasetDetailView({ id, appMode = false }: { id: string;
     <div className={appMode ? 'min-h-full bg-[#0a0a0a]' : 'ref-shell'}>
       {appMode ? null : <CatalogNav />}
       <main>
-        <section className="border-b border-[#262626] px-8 py-8 md:px-12 md:py-10">
+        <section className={`border-b border-[#262626] ${appMode ? 'px-6 py-6 md:px-10 md:py-8' : 'px-8 py-8 md:px-12 md:py-10'}`}>
           <div className="flex flex-wrap items-center justify-between gap-4">
             <Link href={backHref} className="text-[13px] text-[#888] no-underline hover:text-white">
               {appMode ? '← Back to marketplace' : '← Back to catalog'}
@@ -363,7 +364,7 @@ export default function DatasetDetailView({ id, appMode = false }: { id: string;
               </div>
               <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
                 {versions.map((version) => (
-                  <Link key={version.id} href={`/catalog/${version.id}`} className={`min-w-[10rem] rounded-[10px] border px-3 py-3 no-underline ${version.id === listing?.id ? 'border-[#777] bg-[#222]' : 'border-[#303030] bg-[#111] hover:border-[#555]'}`}>
+                  <Link key={version.id} href={`/${appMode ? 'marketplace' : 'catalog'}/${version.id}`} className={`min-w-[10rem] rounded-[10px] border px-3 py-3 no-underline ${version.id === listing?.id ? 'border-[#777] bg-[#222]' : 'border-[#303030] bg-[#111] hover:border-[#555]'}`}>
                     <span className="text-[12px] text-[#e5e5e5]">v{version.version}{version.id === versions[0]?.id ? ' · current' : ''}</span>
                     <span className="mt-1 block truncate text-[10px] text-[#777]">{version.changelog || 'Original publication'}</span>
                   </Link>
@@ -598,9 +599,7 @@ export default function DatasetDetailView({ id, appMode = false }: { id: string;
                 MORE IN {(listing.tags[0] ?? 'THIS CATEGORY').toUpperCase()}
               </p>
               <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {related.map((r) => (
-                  <DatasetCard key={r.id} dataset={r} />
-                ))}
+                {related.map((r) => appMode ? <AppDatasetCard key={r.id} dataset={r} basePath="/marketplace" /> : <DatasetCard key={r.id} dataset={r} basePath="/catalog" />)}
               </div>
             </div>
           ) : null}

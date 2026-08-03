@@ -7,7 +7,7 @@ import WorkspaceFrame from '../../../components/dashboard/WorkspaceFrame';
 import DatasetDetailView from '../../../components/catalog/DatasetDetailView';
 import { getProfile, type PublisherProfile } from '../../../lib/profile';
 
-export default function MarketplaceDetailRoute({ id }: { id: string }) {
+export default function MarketplaceDetailRoute({ id, from }: { id: string; from?: string | null }) {
   const router = useRouter();
   const [address, setAddress] = useState('');
   const [profile, setProfile] = useState<PublisherProfile | null>(null);
@@ -31,5 +31,5 @@ export default function MarketplaceDetailRoute({ id }: { id: string }) {
   if (!address || !checked) return <BrandLoader label="Checking wallet" hint="Restoring your dataset view." />;
   if (!profile) { router.replace('/profile'); return <BrandLoader label="Profile needed" hint="Setting up your Meris workspace…" />; }
 
-  return <WorkspaceFrame address={address} profile={profile} title="Marketplace"><DatasetDetailView id={id} appMode /></WorkspaceFrame>;
+  return <WorkspaceFrame address={address} profile={profile} title="Marketplace"><DatasetDetailView id={id} appMode from={from} /></WorkspaceFrame>;
 }

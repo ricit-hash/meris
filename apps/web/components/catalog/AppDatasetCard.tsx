@@ -5,7 +5,12 @@ import Link from 'next/link';
 import type { CatalogListing } from '../../lib/datasets';
 import { formatShelbyPrice } from './sample-data';
 
-export default function AppDatasetCard({ dataset, basePath = '/marketplace' }: { dataset: CatalogListing; basePath?: string }) {
+export function buildDatasetDetailHref(basePath: string, id: string, contextHref?: string): string {
+  const href = `${basePath}/${encodeURIComponent(id)}`;
+  return basePath === '/app/marketplace' && contextHref ? `${href}?from=${encodeURIComponent(contextHref)}` : href;
+}
+
+export default function AppDatasetCard({ dataset, basePath = '/marketplace', contextHref }: { dataset: CatalogListing; basePath?: string; contextHref?: string }) {
   const [copied, setCopied] = useState(false);
   const [availability, setAvailability] = useState<'checking' | 'available' | 'expired' | 'missing' | 'unavailable' | 'draft'>(dataset.id.startsWith('m-') ? 'checking' : 'draft');
   useEffect(() => {
@@ -25,7 +30,7 @@ export default function AppDatasetCard({ dataset, basePath = '/marketplace' }: {
     try { await navigator.clipboard.writeText(dataset.id); setCopied(true); setTimeout(() => setCopied(false), 1200); } catch { /* clipboard unavailable */ }
   }
   return (
-    <Link href={`${basePath}/${dataset.id}`} className="group grid gap-4 border-b border-[#292929] py-5 no-underline transition-colors hover:bg-white/[0.02] md:grid-cols-[minmax(0,1fr)_180px] md:px-3">
+    <Link href={buildDatasetDetailHref(basePath, dataset.id, contextHref)} className="group grid gap-4 border-b border-[#292929] py-5 no-underline transition-colors hover:bg-white/[0.02] md:grid-cols-[minmax(0,1fr)_180px] md:px-3">
       <div className="min-w-0">
         <div className="flex flex-wrap items-baseline gap-3">
           <h2 className="truncate text-[15px] font-medium tracking-[-0.015em] text-[#e5e5e5]">{dataset.title}</h2>

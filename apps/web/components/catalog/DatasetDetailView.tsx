@@ -13,6 +13,7 @@ import { getProfile } from '../../lib/profile';
 import type { Manifest } from '../../lib/manifest-store';
 import { inferColumnSchema } from '../../lib/dataset-schema';
 import { formatExpiry, type AvailabilityStatus } from '../../lib/availability';
+import { validateMarketplaceOrigin } from '../../lib/marketplace-context';
 
 // Lazy-loaded: interactive buyer panel, split into its own chunk.
 const RangeRequest = dynamic(() => import('./RangeRequest'), { ssr: true });
@@ -21,9 +22,13 @@ const DiscussionSection = dynamic(() => import('./DiscussionSection'), { ssr: tr
 
 const fmt = new Intl.NumberFormat('en-US');
 
-export default function DatasetDetailView({ id, appMode = false }: { id: string; appMode?: boolean }) {
+export function getDatasetBackHref(appMode: boolean, from?: string | null): string {
+  return validateMarketplaceOrigin(from ?? null, appMode ? 'app' : 'public');
+}
+
+export default function DatasetDetailView({ id, appMode = false, from }: { id: string; appMode?: boolean; from?: string | null }) {
   const router = useRouter();
-  const backHref = appMode ? '/app/marketplace' : '/catalog';
+  const backHref = getDatasetBackHref(appMode, from);
   const [draft, setDraft] = useState<CatalogListing | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [delistState, setDelistState] = useState<'idle' | 'confirm' | 'busy'>('idle');

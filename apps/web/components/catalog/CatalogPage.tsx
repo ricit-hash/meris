@@ -13,6 +13,14 @@ import { sortOptions } from './sample-data';
 import { getDatasets, draftToListing, type CatalogListing } from '../../lib/datasets';
 import { getProfile } from '../../lib/profile';
 import type { Manifest } from '../../lib/manifest-store';
+import {
+  canonicalMarketplaceHref,
+  clampScrollTarget,
+  clearMarketplaceContext,
+  readMarketplaceContext,
+  saveMarketplaceContext,
+  shouldRestoreMarketplaceScroll,
+} from '../../lib/marketplace-context';
 
 function matchesFilters(d: CatalogListing, active: Record<string, string[]>): boolean {
   const cats = active['Category'] ?? [];
@@ -46,6 +54,7 @@ export default function CatalogPage({ embedded = false }: { embedded?: boolean }
   const [manifestState, setManifestState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [filterOpen, setFilterOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement | null>(null);
+  const restoredContextRef = useRef<string | null>(null);
 
   // Shareable catalog state: the URL is the source of truth for reads.
   // Back/forward navigation syncs state from the query params.
@@ -208,6 +217,43 @@ export default function CatalogPage({ embedded = false }: { embedded?: boolean }
   }, [all, query, active, sort]);
 
   const activeCount = Object.values(active).reduce((sum, arr) => sum + arr.length, 0);
+  const appContextHref = embedded && typeof window !== 'undefined'
+    ? canonicalMarketplaceHref('app', `${window.location.pathname}${window.location.search}`)
+    : undefined;
+
+  useEffect(() => {
+    if (!appContextHref) return;
+    let timer: number | undefined;
+    let lastSavedAt = 0;
+    const save = () => {
+      lastSavedAt = Date.now();
+      saveMarketplaceContext(appContextHref, window.scrollY);
+    };
+    const onScroll = () => {
+      const elapsed = Date.now() - lastSavedAt;
+      if (elapsed >= 150) save();
+      else if (timer === undefined) timer = window.setTimeout(() => { timer = undefined; save(); }, 150 - elapsed);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      if (timer !== undefined) window.clearTimeout(timer);
+      save();
+    };
+  }, [appContextHref]);
+
+  useEffect(() => {
+    if (!appContextHref || !shouldRestoreMarketplaceScroll({ embedded, href: appContextHref, manifestState, itemCount: filtered.length, restoredHref: restoredContextRef.current })) return;
+    const context = readMarketplaceContext(appContextHref);
+    restoredContextRef.current = appContextHref;
+    if (!context) return;
+    const timer = window.setTimeout(() => {
+      const target = clampScrollTarget(context.scrollY, document.documentElement.scrollHeight, window.innerHeight);
+      window.scrollTo({ top: target, behavior: 'auto' });
+      clearMarketplaceContext(appContextHref);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [appContextHref, embedded, filtered.length, manifestState]);
 
   return (
     <div className={embedded ? 'min-h-full bg-[#0a0a0a]' : 'ref-shell'}>
@@ -247,7 +293,7 @@ export default function CatalogPage({ embedded = false }: { embedded?: boolean }
             <div className="flex min-w-0 flex-1 flex-col items-center justify-center border border-dashed border-[#2b2b2b] p-16 text-center"><p className="text-[14px] text-[#888]">No listings match these filters.</p><p className="mt-2 max-w-[36ch] text-[12px] leading-5 text-[#666]">Clear filters or try a different search term.</p><button type="button" onClick={resetAll} className="mt-5 border border-[#303030] px-5 py-2.5 text-[13px] font-medium text-[#a7a7a7] hover:border-[#4a4a4a] hover:text-white">Clear filters</button></div>
           ) : (
             <div className={embedded ? 'min-w-0 flex-1' : 'grid min-w-0 flex-1 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3'}>
-              {filtered.map((dataset) => embedded ? <AppDatasetCard key={dataset.id} dataset={dataset} basePath="/app/marketplace" /> : <DatasetCard key={dataset.id} dataset={dataset} basePath="/catalog" />)}
+              {filtered.map((dataset) => embedded ? <AppDatasetCard key={dataset.id} dataset={dataset} basePath="/app/marketplace" contextHref={appContextHref} /> : <DatasetCard key={dataset.id} dataset={dataset} basePath="/catalog" />)}
             </div>
           )}
         </section>

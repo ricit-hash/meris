@@ -121,7 +121,7 @@ export default function PurchasesView({ address }: { address: string }) {
                   Request a slice of any listing in the catalog — paid or free — and it shows up here.
                 </p>
                 <Link
-                  href="/marketplace"
+                  href="/app/marketplace"
                   className="mt-5 inline-block rounded-[12px] bg-[#f2f2f2] px-6 py-[12px] text-[14px] font-medium text-[#222] no-underline transition-[opacity,transform] duration-150 hover:opacity-85 active:scale-[0.97]"
                 >
                   Browse the catalog

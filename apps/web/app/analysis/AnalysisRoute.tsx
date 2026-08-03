@@ -18,12 +18,12 @@ export default function AnalysisRoute() {
       .then(({ getConnectedWallet }) => getConnectedWallet())
       .then((wallet) => {
         if (cancelled) return;
-        if (!wallet?.address) { router.replace('/gate?intent=app&next=/analysis'); return; }
+        if (!wallet?.address) { router.replace('/gate?intent=app&next=/app/analysis'); return; }
         setAddress(wallet.address);
         setProfile(getProfile());
         setChecked(true);
       })
-      .catch(() => { if (!cancelled) router.replace('/gate?intent=app&next=/analysis'); });
+      .catch(() => { if (!cancelled) router.replace('/gate?intent=app&next=/app/analysis'); });
     return () => { cancelled = true; };
   }, [router]);
 

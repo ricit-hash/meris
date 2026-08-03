@@ -23,7 +23,7 @@ const fmt = new Intl.NumberFormat('en-US');
 
 export default function DatasetDetailView({ id, appMode = false }: { id: string; appMode?: boolean }) {
   const router = useRouter();
-  const backHref = appMode ? '/marketplace' : '/catalog';
+  const backHref = appMode ? '/app/marketplace' : '/catalog';
   const [draft, setDraft] = useState<CatalogListing | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [delistState, setDelistState] = useState<'idle' | 'confirm' | 'busy'>('idle');
@@ -364,7 +364,7 @@ export default function DatasetDetailView({ id, appMode = false }: { id: string;
               </div>
               <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
                 {versions.map((version) => (
-                  <Link key={version.id} href={`/${appMode ? 'marketplace' : 'catalog'}/${version.id}`} className={`min-w-[10rem] rounded-[10px] border px-3 py-3 no-underline ${version.id === listing?.id ? 'border-[#777] bg-[#222]' : 'border-[#303030] bg-[#111] hover:border-[#555]'}`}>
+                  <Link key={version.id} href={`/${appMode ? 'app/marketplace' : 'catalog'}/${version.id}`} className={`min-w-[10rem] rounded-[10px] border px-3 py-3 no-underline ${version.id === listing?.id ? 'border-[#777] bg-[#222]' : 'border-[#303030] bg-[#111] hover:border-[#555]'}`}>
                     <span className="text-[12px] text-[#e5e5e5]">v{version.version}{version.id === versions[0]?.id ? ' · current' : ''}</span>
                     <span className="mt-1 block truncate text-[10px] text-[#777]">{version.changelog || 'Original publication'}</span>
                   </Link>
@@ -599,7 +599,7 @@ export default function DatasetDetailView({ id, appMode = false }: { id: string;
                 MORE IN {(listing.tags[0] ?? 'THIS CATEGORY').toUpperCase()}
               </p>
               <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {related.map((r) => appMode ? <AppDatasetCard key={r.id} dataset={r} basePath="/marketplace" /> : <DatasetCard key={r.id} dataset={r} basePath="/catalog" />)}
+                {related.map((r) => appMode ? <AppDatasetCard key={r.id} dataset={r} basePath="/app/marketplace" /> : <DatasetCard key={r.id} dataset={r} basePath="/catalog" />)}
               </div>
             </div>
           ) : null}

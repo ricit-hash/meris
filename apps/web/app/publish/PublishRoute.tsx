@@ -21,7 +21,7 @@ export default function PublishRoute() {
       .then((wallet) => {
         if (cancelled) return;
         if (!wallet?.address) {
-          router.replace('/gate?intent=publish&next=/publish');
+          router.replace('/gate?intent=publish&next=/app/publish');
           return;
         }
         setAddress(wallet.address);
@@ -34,7 +34,7 @@ export default function PublishRoute() {
         setChecked(true);
       })
       .catch(() => {
-        if (!cancelled) router.replace('/gate?intent=publish&next=/publish');
+        if (!cancelled) router.replace('/gate?intent=publish&next=/app/publish');
       });
 
     return () => {

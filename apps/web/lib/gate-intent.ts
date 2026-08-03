@@ -6,7 +6,7 @@ export function parseGateIntent(value: string | null): GateIntent {
 }
 
 export function safeGateNext(value: string | null): string {
-  if (!value || !value.startsWith('/') || value.startsWith('//') || value.includes('\\')) return '/dashboard';
+  if (!value || !value.startsWith('/') || value.startsWith('//') || value.includes('\\')) return '/app';
   return value;
 }
 

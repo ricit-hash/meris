@@ -19,12 +19,12 @@ export default function MarketplaceDetailRoute({ id }: { id: string }) {
       .then(({ getConnectedWallet }) => getConnectedWallet())
       .then((wallet) => {
         if (cancelled) return;
-        if (!wallet?.address) { router.replace(`/gate?intent=purchase&next=/marketplace/${id}`); return; }
+        if (!wallet?.address) { router.replace(`/gate?intent=purchase&next=/app/marketplace/${id}`); return; }
         setAddress(wallet.address);
         setProfile(getProfile());
         setChecked(true);
       })
-      .catch(() => { if (!cancelled) router.replace(`/gate?intent=purchase&next=/marketplace/${id}`); });
+      .catch(() => { if (!cancelled) router.replace(`/gate?intent=purchase&next=/app/marketplace/${id}`); });
     return () => { cancelled = true; };
   }, [id, router]);
 

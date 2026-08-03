@@ -1,13 +1,13 @@
 export const workspaceNavigation = [
-  { heading: null, items: [{ href: '/dashboard', label: 'Home' }] },
-  { heading: 'EXPLORE', items: [{ href: '/marketplace', label: 'Marketplace' }] },
-  { heading: 'LIBRARY', items: [{ href: '/purchases', label: 'Purchases' }] },
+  { heading: null, items: [{ href: '/app', label: 'Home' }] },
+  { heading: 'EXPLORE', items: [{ href: '/app/marketplace', label: 'Marketplace' }] },
+  { heading: 'LIBRARY', items: [{ href: '/app/purchases', label: 'Purchases' }] },
   {
     heading: 'PUBLISH',
     items: [
-      { href: '/analysis', label: 'Analytics' },
-      { href: '/listings', label: 'Listings' },
-      { href: '/publish', label: 'Publish' },
+      { href: '/app/analysis', label: 'Analytics' },
+      { href: '/app/listings', label: 'Listings' },
+      { href: '/app/publish', label: 'Publish' },
     ],
   },
 ] as const;

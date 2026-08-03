@@ -17,16 +17,22 @@ export default function ListingsShell({ address, profile }: { address: string; p
   useEffect(() => {
     setDrafts(getDatasets());
     let cancelled = false;
-    void fetch('/api/manifests')
-      .then(async (response) => {
+    void (async () => {
+      try {
+        const { getConnectedWallet, signMessageDetailed } = await import('../../lib/wallet/aptos-client');
+        const wallet = await getConnectedWallet();
+        if (!wallet?.publicKey) throw new Error('Wallet public key unavailable');
+        const expiry = Date.now() + 5 * 60 * 1000;
+        const signed = await signMessageDetailed(`meris:listings:publisher:${expiry}`);
+        const response = await fetch('/api/manifests/mine', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ publicKeyHex: wallet.publicKey, signature: signed.signature, fullMessage: signed.fullMessage }) });
         if (!response.ok) throw new Error('manifest request failed');
         const data = (await response.json()) as { manifests?: Manifest[] };
         if (!cancelled) {
           setPublished((data.manifests ?? []).map((manifest) => ({ id: manifest.id, name: manifest.name, blobPath: manifest.blobPath, kind: manifest.kind, status: manifest.blobPath.startsWith('shelby://') ? 'Published' : 'Unavailable' })));
           setState('ready');
         }
-      })
-      .catch(() => { if (!cancelled) setState('error'); });
+      } catch { if (!cancelled) setState('error'); }
+    })();
     return () => { cancelled = true; };
   }, []);
 

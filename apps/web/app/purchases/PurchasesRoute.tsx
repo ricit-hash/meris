@@ -20,7 +20,7 @@ export default function PurchasesRoute() {
       const wallet = await getConnectedWallet();
       if (cancelled) return;
       if (!wallet?.address) {
-        router.replace('/gate?intent=purchases&next=/purchases');
+        router.replace('/gate?intent=purchases&next=/app/purchases');
         return;
       }
       setAddress(wallet.address);

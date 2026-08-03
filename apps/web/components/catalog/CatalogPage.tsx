@@ -81,7 +81,7 @@ export default function CatalogPage({ embedded = false }: { embedded?: boolean }
     const params: [string, string[]][] = [['cat', nextActive.Category ?? []], ['delivery', nextActive.Delivery ?? []], ['price', nextActive.Price ?? []], ['license', nextActive.License ?? []]];
     for (const [key, values] of params) if (values.length) p.set(key, values.join(','));
     const str = p.toString();
-    router.replace(`${embedded ? '/marketplace' : '/catalog'}${str ? `?${str}` : ''}`, { scroll: false });
+    router.replace(`${embedded ? '/app/marketplace' : '/catalog'}${str ? `?${str}` : ''}`, { scroll: false });
   }
 
   function updateQuery(v: string) {
@@ -242,12 +242,12 @@ export default function CatalogPage({ embedded = false }: { embedded?: boolean }
           ) : manifestState === 'error' && all.length === 0 ? (
             <div className="flex min-w-0 flex-1 flex-col items-center justify-center border border-dashed border-[#2b2b2b] p-16 text-center"><p className="text-[14px] text-[#999]">Could not load live listings.</p><p className="mt-2 text-[12px] text-[#666]">Check your connection and try again.</p><button type="button" onClick={() => window.location.reload()} className="mt-5 text-[12px] text-[#c8c8c8] hover:text-white">Retry</button></div>
           ) : all.length === 0 ? (
-            <div className="flex min-w-0 flex-1 flex-col items-center justify-center border border-dashed border-[#2b2b2b] p-16 text-center"><p className="text-[14px] text-[#888]">No live datasets yet.</p><p className="mt-2 max-w-[40ch] text-[12px] leading-5 text-[#666]">Publish a blob-backed dataset to make it available in the marketplace.</p><Link href="/publish" className="mt-5 border border-[#303030] px-5 py-2.5 text-[13px] font-medium text-[#a7a7a7] no-underline hover:border-[#4a4a4a] hover:text-white">Publish a dataset</Link></div>
+            <div className="flex min-w-0 flex-1 flex-col items-center justify-center border border-dashed border-[#2b2b2b] p-16 text-center"><p className="text-[14px] text-[#888]">No live datasets yet.</p><p className="mt-2 max-w-[40ch] text-[12px] leading-5 text-[#666]">Publish a blob-backed dataset to make it available in the marketplace.</p><Link href="/app/publish" className="mt-5 border border-[#303030] px-5 py-2.5 text-[13px] font-medium text-[#a7a7a7] no-underline hover:border-[#4a4a4a] hover:text-white">Publish a dataset</Link></div>
           ) : filtered.length === 0 ? (
             <div className="flex min-w-0 flex-1 flex-col items-center justify-center border border-dashed border-[#2b2b2b] p-16 text-center"><p className="text-[14px] text-[#888]">No listings match these filters.</p><p className="mt-2 max-w-[36ch] text-[12px] leading-5 text-[#666]">Clear filters or try a different search term.</p><button type="button" onClick={resetAll} className="mt-5 border border-[#303030] px-5 py-2.5 text-[13px] font-medium text-[#a7a7a7] hover:border-[#4a4a4a] hover:text-white">Clear filters</button></div>
           ) : (
             <div className={embedded ? 'min-w-0 flex-1' : 'grid min-w-0 flex-1 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3'}>
-              {filtered.map((dataset) => embedded ? <AppDatasetCard key={dataset.id} dataset={dataset} basePath="/marketplace" /> : <DatasetCard key={dataset.id} dataset={dataset} basePath="/catalog" />)}
+              {filtered.map((dataset) => embedded ? <AppDatasetCard key={dataset.id} dataset={dataset} basePath="/app/marketplace" /> : <DatasetCard key={dataset.id} dataset={dataset} basePath="/catalog" />)}
             </div>
           )}
         </section>

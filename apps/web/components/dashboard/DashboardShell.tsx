@@ -48,7 +48,7 @@ export default function DashboardShell({ address, profile }: Props) {
                   </p>
                 </div>
                 <Link
-                  href="/publish"
+                  href="/app/publish"
                   className="rounded-[12px] bg-[#f2f2f2] px-6 py-[12px] text-[14px] font-medium text-[#222] no-underline transition-[opacity,transform] hover:opacity-85 active:scale-[0.97]"
                 >
                   Publish dataset

@@ -7,6 +7,7 @@ import { formatShelbyPrice } from './sample-data';
 
 export default function AppDatasetCard({ dataset, basePath = '/marketplace' }: { dataset: CatalogListing; basePath?: string }) {
   const [copied, setCopied] = useState(false);
+  const availability = dataset.blobPath.startsWith('shelby://') ? (dataset.expiresAt && dataset.expiresAt <= Date.now() ? 'Expired' : 'Available') : 'Draft';
   async function copyId() {
     try { await navigator.clipboard.writeText(dataset.id); setCopied(true); setTimeout(() => setCopied(false), 1200); } catch { /* clipboard unavailable */ }
   }
@@ -16,7 +17,7 @@ export default function AppDatasetCard({ dataset, basePath = '/marketplace' }: {
         <div className="flex flex-wrap items-baseline gap-3">
           <h2 className="truncate text-[15px] font-medium tracking-[-0.015em] text-[#e5e5e5]">{dataset.title}</h2>
           <span className="text-[10px] uppercase tracking-[0.1em] text-[#666]">{dataset.kind === 'file' ? 'Full file' : 'Range'}</span>
-          {dataset.isMine ? <span className="text-[10px] uppercase tracking-[0.1em] text-[#aaa]">Yours</span> : null}
+          <span className={`text-[10px] uppercase tracking-[0.1em] ${availability === 'Available' ? 'text-[#aaa]' : availability === 'Expired' ? 'text-[#b88]' : 'text-[#666]'}`}>{availability}</span>
         </div>
         <p className="mt-1.5 text-[11px] text-[#aaa]">{dataset.publisher}<span className="mx-2 text-[#444]">·</span>{dataset.updated}</p>
         <p className="mt-3 line-clamp-2 max-w-[62ch] text-[12px] leading-5 text-[#888]">{dataset.description}</p>
